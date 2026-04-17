@@ -1,0 +1,12 @@
+{
+  "selector": "div.col-12.col-lg-8",
+  "outputDir": "./output",
+  "assetsPath": "assets",
+  "options": {
+    "localizeImages": true,
+    "deobfuscateEmails": true,
+    "delayMs": 500,
+    "retries": 3,
+    "timeout": 30
+  }
+}
