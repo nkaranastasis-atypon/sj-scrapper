@@ -97,6 +97,7 @@ class WebScraper:
         self.output_dir = Path(config.get("outputDir", "./output"))
         self.assets_path = config.get("assetsPath", "assets")
         self.options = config.get("options", {})
+        self.mode = config.get("mode", "html")
         self.report = ScraperReport()
         self.session = requests.Session()
         self.session.headers.update({
@@ -349,8 +350,89 @@ class WebScraper:
         
         return filename
     
+    def _process_url_image(self, url: str) -> bool:
+        """Process a single URL in image mode - locate a specific <img> and save it as a file"""
+        try:
+            print(f"Processing: {url}")
+
+            # Fetch page HTML
+            html = self.fetch_url(url)
+            if not html:
+                raise Exception("Failed to fetch URL")
+
+            # Locate the <img> element via CSS selector
+            soup = BeautifulSoup(html, 'lxml')
+            element = soup.select_one(self.selector)
+            if not element:
+                raise Exception(f"No element found matching selector: {self.selector}")
+
+            # If the selector matched a container, look for the first <img> inside
+            if element.name != 'img':
+                element = element.find('img')
+                if not element:
+                    raise Exception(f"No <img> tag found within element matching selector: {self.selector}")
+
+            # Prefer lazy-load attributes over src (which may be a placeholder data: URI)
+            src = ''
+            for attr in ('data-src', 'data-lazy-src', 'data-original', 'data-img-src'):
+                candidate = element.get(attr, '')
+                if candidate and not candidate.startswith('data:'):
+                    src = candidate
+                    break
+            if not src:
+                candidate = element.get('src', '')
+                if candidate and not candidate.startswith('data:'):
+                    src = candidate
+            if not src:
+                raise Exception("Matched <img> has no usable src (only data: URI placeholders found)")
+
+            # Resolve to absolute URL
+            full_img_url = urljoin(url, src)
+
+            # Build filename: last path segment of the PAGE URL + image extension
+            page_slug = urlparse(url).path.rstrip('/').rsplit('/', 1)[-1]
+            page_slug = re.sub(r'[^\w\-]', '_', page_slug) or 'image'
+
+            img_ext = Path(urlparse(full_img_url).path).suffix
+
+            # Download the image
+            assets_dir = self.output_dir / self.assets_path
+            assets_dir.mkdir(parents=True, exist_ok=True)
+
+            response = self.session.get(full_img_url, timeout=self.options.get('timeout', 30))
+            response.raise_for_status()
+
+            # If the URL had no extension, derive it from Content-Type
+            if not img_ext:
+                content_type = response.headers.get('Content-Type', '')
+                ext_map = {
+                    'image/jpeg': '.jpg', 'image/jpg': '.jpg',
+                    'image/png': '.png', 'image/gif': '.gif',
+                    'image/webp': '.webp', 'image/svg+xml': '.svg',
+                }
+                img_ext = ext_map.get(content_type.split(';')[0].strip(), '.jpg')
+
+            filename = f"{page_slug}{img_ext}"
+            file_path = assets_dir / filename
+
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+
+            self.report.add_image(full_img_url, str(file_path), filename)
+            self.report.add_success(url, filename)
+            print(f"  ✓ Saved image: {file_path}")
+            return True
+
+        except Exception as e:
+            error_msg = str(e)
+            self.report.add_error(url, error_msg)
+            print(f"  ✗ Error: {error_msg}")
+            return False
+
     def process_url(self, url: str) -> bool:
         """Process a single URL"""
+        if self.mode == 'image':
+            return self._process_url_image(url)
         try:
             print(f"Processing: {url}")
             
@@ -449,8 +531,11 @@ class WebScraper:
             print(f"Resuming from checkpoint - {len(processed_urls)} already completed")
         print(f"{'='*80}\n")
         
-        # Copy sample assets if provided
-        if sample_dir and sample_dir.exists():
+        # Ensure output directory exists before any URL is processed
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy sample assets if provided (not needed in image mode)
+        if self.mode != 'image' and sample_dir and sample_dir.exists():
             self.copy_sample_assets(sample_dir)
         
         # Process each URL
@@ -524,7 +609,9 @@ class WebScraper:
               help='Delay between requests in ms (overrides config)')
 @click.option('--no-resume', is_flag=True,
               help='Start from beginning, ignoring checkpoint file')
-def main(config, urls, sample, selector, output, delay, no_resume):
+@click.option('--mode', type=click.Choice(['html', 'image']), default=None,
+              help='Scraping mode: html (extract page section, default) or image (download a specific image element)')
+def main(config, urls, sample, selector, output, delay, no_resume, mode):
     """Web scraper tool - Extract and process web pages"""
     
     # Load config
@@ -538,6 +625,8 @@ def main(config, urls, sample, selector, output, delay, no_resume):
         config_data['outputDir'] = output
     if delay:
         config_data['options']['delayMs'] = delay
+    if mode:
+        config_data['mode'] = mode
     
     # Create and run scraper
     scraper = WebScraper(config_data)
