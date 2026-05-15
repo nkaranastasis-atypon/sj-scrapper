@@ -5,6 +5,7 @@ Python-based web scraping tool for extracting and processing content from multip
 ## Features
 
 - ✅ Batch URL processing from text file
+- ✅ **Two scraping modes**: HTML section extraction or direct image download
 - ✅ CSS selector-based content extraction
 - ✅ Image localization (downloads to assets folder)
 - ✅ Cloudflare email deobfuscation
@@ -41,7 +42,7 @@ pip install -r requirements.txt
 python scraper.py --urls urls.txt --sample sample
 ```
 
-### Advanced Options
+### Advanced Options (HTML mode)
 
 ```bash
 python scraper.py \
@@ -53,14 +54,32 @@ python scraper.py \
   --delay 1000
 ```
 
+### Image mode — download a specific image from each page
+
+Use `--mode image` with a CSS selector that targets the `<img>` element directly (or a container that holds it). The scraper saves one image file per URL, named after the last path segment of the page URL.
+
+```bash
+python scraper.py \
+  --urls cover_urls.txt \
+  --mode image \
+  --selector "div.cover-box img" \
+  --output ./cover-images
+```
+
+Images are saved to `output/assets/`. No HTML files or `lib/`/`fonts/` assets are produced in this mode.
+
 ### Command Line Options
 
-- `--config, -c`: Path to config JSON file (default: `config.json`)
-- `--urls, -u`: Path to URLs text file (required)
-- `--sample, -s`: Path to sample directory with `lib/` and `fonts/` folders
-- `--selector`: CSS selector (overrides config)
-- `--output, -o`: Output directory (overrides config)
-- `--delay`: Delay between requests in milliseconds (overrides config)
+| Option | Short | Description |
+|---|---|---|
+| `--config` | `-c` | Path to config JSON file (default: `config.json`) |
+| `--urls` | `-u` | Path to URLs text file (**required**) |
+| `--sample` | `-s` | Path to sample directory with `lib/` and `fonts/` folders |
+| `--mode` | | `html` (default) or `image` — overrides config |
+| `--selector` | | CSS selector — overrides config |
+| `--output` | `-o` | Output directory — overrides config |
+| `--delay` | | Delay between requests in ms — overrides config |
+| `--no-resume` | | Ignore checkpoint file and start from scratch |
 
 ## Configuration
 
@@ -68,6 +87,7 @@ Edit `config.json` to customize settings:
 
 ```json
 {
+  "mode": "html",
   "selector": "div.col-12.col-lg-8",
   "outputDir": "./output",
   "assetsPath": "assets",
@@ -81,22 +101,36 @@ Edit `config.json` to customize settings:
 }
 ```
 
+| Field | Values | Description |
+|---|---|---|
+| `mode` | `html` / `image` | Scraping mode (default: `html`) |
+| `selector` | any CSS selector | Element to extract; in image mode targets the `<img>` or its container |
+| `outputDir` | path | Root output folder |
+| `assetsPath` | folder name | Subfolder inside `outputDir` for downloaded images |
+
 ## Output Structure
 
+**HTML mode** (`--mode html`, default):
 ```
 output/
 ├── page/
 │   ├── path_to_page1.html
 │   ├── path_to_page2.html
 │   └── ...
-├── assets/
-│   ├── image1.jpg
-│   ├── image2.png
-│   └── ...
+├── assets/         # downloaded images referenced by the HTML
 ├── lib/
 │   ├── accordion.js
 │   └── extracted-styles.css
 ├── fonts/
+└── scraping_report.txt
+```
+
+**Image mode** (`--mode image`):
+```
+output/
+├── assets/
+│   ├── journal1.jpg    # named after last page URL segment
+│   ├── journal2.png
 │   └── ...
 └── scraping_report.txt
 ```
