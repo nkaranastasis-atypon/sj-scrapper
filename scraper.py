@@ -94,6 +94,10 @@ class WebScraper:
     def __init__(self, config: Dict):
         self.config = config
         self.selector = config.get("selector", "div.col-12.col-lg-8")
+        self.user_agent = config.get(
+            "userAgent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        )
         self.output_dir = Path(config.get("outputDir", "./output"))
         self.assets_path = config.get("assetsPath", "assets")
         self.options = config.get("options", {})
@@ -101,7 +105,7 @@ class WebScraper:
         self.report = ScraperReport()
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': self.user_agent
         })
     
     def fetch_url(self, url: str) -> Optional[str]:

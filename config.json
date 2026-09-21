@@ -1,6 +1,7 @@
 {
   "mode": "html",
   "selector": "div.col-12.col-lg-8",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "outputDir": "./output",
   "assetsPath": "assets",
   "options": {
