@@ -4,8 +4,10 @@ import zipfile
 import pytest
 
 from run_pipeline import (
+    _combined_file_hash,
     build_run_manifest,
     changes_since_last_run,
+    write_changes_report,
     validate_manifest,
     validate_package,
     validate_required_section_ids,
@@ -60,10 +62,11 @@ def test_build_run_manifest_hashes_html_and_assets(tmp_path):
     page_dir = tmp_path / "page"
     page_dir.mkdir()
     html_path = page_dir / "author-instructions_AJS.html"
-    html_path.write_text("<html>hello</html>", encoding="utf-8")
+    html_path.write_text("<html><img src='../assets/logo.png'></html>", encoding="utf-8")
     asset_dir = tmp_path / "assets"
     asset_dir.mkdir()
     (asset_dir / "logo.png").write_bytes(b"asset-bytes")
+    (asset_dir / "unused.png").write_bytes(b"unused-bytes")
 
     manifest_path = build_run_manifest(tmp_path, [{"journal_code": "AJS"}])
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -71,6 +74,22 @@ def test_build_run_manifest_hashes_html_and_assets(tmp_path):
     assert data[0]["journal_code"] == "AJS"
     assert data[0]["html_sha256"]
     assert data[0]["asset_hashes"]["logo.png"]
+    assert "unused.png" not in data[0]["asset_hashes"]
+
+
+def test_combined_file_hash_ignores_request_volatile_html_values(tmp_path):
+    first = tmp_path / "first.html"
+    second = tmp_path / "second.html"
+    first.write_text(
+        '<script nonce="old">x</script><div id="accordion123"><span data-cfemail="82e7eae3ffe7f0c2e5efe3ebeeace1edef"></span></div>',
+        encoding="utf-8",
+    )
+    second.write_text(
+        '<script nonce="new">x</script><div id="accordion456"><span data-cfemail="91f4f9f0ecf4e3d1f6fcf0f8fdbff2fefc"></span></div>',
+        encoding="utf-8",
+    )
+
+    assert _combined_file_hash([first]) == _combined_file_hash([second])
 
 
 def test_changes_since_last_run_reports_changed_journal_codes(tmp_path):
@@ -92,6 +111,29 @@ def test_changes_since_last_run_reports_changed_journal_codes(tmp_path):
     )
 
     assert changes_since_last_run(previous, current) == ["AJS"]
+
+
+def test_write_changes_report_reads_previous_run_directory(tmp_path):
+    previous_dir = tmp_path / "previous"
+    current_dir = tmp_path / "current"
+    previous_dir.mkdir()
+    current_dir.mkdir()
+    previous_manifest = previous_dir / "run_manifest_previous.json"
+    current_manifest = current_dir / "run_manifest_current.json"
+    previous_manifest.write_text(
+        json.dumps([{"journal_code": "AJS", "html_sha256": "old"}]),
+        encoding="utf-8",
+    )
+    current_manifest.write_text(
+        json.dumps([{"journal_code": "AJS", "html_sha256": "new"}]),
+        encoding="utf-8",
+    )
+
+    report_path = write_changes_report(current_dir, current_manifest, previous_dir)
+
+    assert report_path.read_text(encoding="utf-8") == (
+        "Changed journals since the last run:\n- AJS\n"
+    )
 
 
 def test_validate_required_section_ids_skips_nonstandard_pages(tmp_path):

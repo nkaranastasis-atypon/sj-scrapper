@@ -63,6 +63,16 @@ validates the delivery archives before completing:
 python run_pipeline.py --config config\config.json --sample sample
 ```
 
+To compare this run with a prior pipeline output, provide the prior output
+directory. The current run still writes to a new, empty output directory:
+
+```bash
+python run_pipeline.py \
+  --config config\config.json \
+  --previous-run output/pipeline-20260922-153355 \
+  --sample sample
+```
+
 For a safe rehearsal with the recorded XML snippet, skip SFTP with `--xml`:
 
 ```bash
@@ -131,6 +141,9 @@ Images are saved to `output/assets/`. No HTML files or `lib/`/`fonts/` assets ar
 | `--output` | `-o` | Output directory — overrides config |
 | `--delay` | | Delay between requests in ms — overrides config |
 | `--no-resume` | | Ignore checkpoint file and start from scratch |
+
+`run_pipeline.py` also accepts `--previous-run`, which points to a completed
+pipeline output directory containing a `run_manifest_*.json` file.
 
 ## Configuration
 

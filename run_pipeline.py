@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -66,20 +67,50 @@ def _combined_file_hash(paths: List[Path]) -> str:
         return ""
     digest = hashlib.sha256()
     for path in sorted(paths):
-        digest.update(path.read_bytes())
+        content = path.read_text(encoding="utf-8") if path.suffix == ".html" else path.read_bytes()
+        if isinstance(content, str):
+            content = _canonicalize_html(content).encode("utf-8")
+        digest.update(content)
         digest.update(b"\n")
     return digest.hexdigest()
 
 
-def _asset_hashes(output_dir: Path) -> Dict[str, str]:
-    """Return a mapping of asset filename -> SHA-256 for all downloaded assets."""
+def _canonicalize_html(html: str) -> str:
+    """Remove request-volatile values before comparing generated HTML."""
+    html = re.sub(r'\s+nonce="[^"]+"', "", html)
+    html = re.sub(r'id="accordion\d+"', 'id="accordion"', html)
+
+    def normalize_cfemail(match: re.Match[str]) -> str:
+        encoded = match.group(1)
+        try:
+            key = int(encoded[:2], 16)
+            decoded = "".join(
+                chr(int(encoded[index:index + 2], 16) ^ key)
+                for index in range(2, len(encoded), 2)
+            )
+        except (ValueError, TypeError):
+            return match.group(0)
+        return f'data-cfemail="{decoded}"'
+
+    return re.sub(r'data-cfemail="([0-9a-fA-F]+)"', normalize_cfemail, html)
+
+
+def _asset_hashes(output_dir: Path, page_files: List[Path]) -> Dict[str, str]:
+    """Return hashes for assets referenced by the supplied journal pages."""
     asset_dir = output_dir / "assets"
     if not asset_dir.exists():
         return {}
+    referenced_assets = set()
+    for page_path in page_files:
+        html = page_path.read_text(encoding="utf-8")
+        referenced_assets.update(
+            match.group(1)
+            for match in re.finditer(r"(?:\.\./)?assets/([^\"'?#\s)]+)", html)
+        )
     return {
         str(path.relative_to(asset_dir)): _sha256_file(path)
         for path in sorted(asset_dir.rglob("*"))
-        if path.is_file()
+        if path.is_file() and str(path.relative_to(asset_dir)) in referenced_assets
     }
 
 
@@ -87,8 +118,6 @@ def build_run_manifest(output_dir: Path, records: List[Dict[str, Any]]) -> Path:
     """Write a run manifest containing HTML and asset hashes for each journal."""
     page_dir = output_dir / "page"
     manifest_records = []
-    shared_assets = _asset_hashes(output_dir)
-
     for record in records:
         journal_code = str(record.get("journal_code", "")).strip().upper()
         page_files = sorted(
@@ -104,7 +133,7 @@ def build_run_manifest(output_dir: Path, records: List[Dict[str, Any]]) -> Path:
             "excluded": bool(record.get("excluded", False)),
             "excluded_reason": record.get("excluded_reason", ""),
             "html_sha256": _combined_file_hash(page_files),
-            "asset_hashes": shared_assets,
+            "asset_hashes": _asset_hashes(output_dir, page_files),
         })
 
     manifest_path = output_dir / f"run_manifest_{datetime.now():%Y%m%d-%H%M%S}.json"
@@ -131,9 +160,17 @@ def changes_since_last_run(previous_manifest: Path, current_manifest: Path) -> L
     return changed
 
 
-def write_changes_report(output_dir: Path, current_manifest: Path) -> Path:
-    """Compare against the most recent previous run and write a human-readable delta file."""
-    previous_candidates = sorted(output_dir.glob("run_manifest_*.json"), key=lambda path: path.stat().st_mtime)
+def write_changes_report(
+    output_dir: Path,
+    current_manifest: Path,
+    previous_run_dir: Optional[Path] = None,
+) -> Path:
+    """Compare against a previous run manifest and write a human-readable delta file."""
+    manifest_dir = previous_run_dir or output_dir
+    previous_candidates = sorted(
+        manifest_dir.glob("run_manifest_*.json"),
+        key=lambda path: path.stat().st_mtime,
+    )
     previous = None
     for candidate in reversed(previous_candidates):
         if candidate.resolve() != current_manifest.resolve():
@@ -212,6 +249,7 @@ def run_pipeline(
     xml_path: Optional[Path],
     delivery_month: Optional[str],
     max_failures: int,
+    previous_run_dir: Optional[Path] = None,
 ) -> Dict[str, Path]:
     """Run all current phases and stop when a sanity check fails."""
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -266,7 +304,7 @@ def run_pipeline(
     click.echo("[4/4] Packaging and validating delivery artifacts")
     current_run_manifest = build_run_manifest(output_dir, records)
     validate_required_section_ids(output_dir)
-    write_changes_report(output_dir, current_run_manifest)
+    write_changes_report(output_dir, current_run_manifest, previous_run_dir)
     outputs = package_delivery(output_dir, manifest_path, delivery_month)
     validate_package(outputs, allow_empty_pages=interrupted)
     if interrupted:
@@ -288,6 +326,8 @@ def run_pipeline(
 @click.option("--month", "delivery_month", default=None, help="Delivery month in YYYY-MM format.")
 @click.option("--max-failures", default=0, type=click.IntRange(min=0),
               help="Maximum allowed page failures before packaging is refused.")
+@click.option("--previous-run", "previous_run_dir", type=click.Path(exists=True, file_okay=False, path_type=Path),
+              default=None, help="Output directory from the previous pipeline run.")
 def main(
     config_path: Path,
     output_dir: Optional[Path],
@@ -295,12 +335,21 @@ def main(
     xml_path: Optional[Path],
     delivery_month: Optional[str],
     max_failures: int,
+    previous_run_dir: Optional[Path],
 ) -> None:
     """Run manifest generation, scraping, reporting, and packaging in order."""
     if output_dir is None:
         output_dir = Path("output") / f"pipeline-{datetime.now():%Y%m%d-%H%M%S}"
     try:
-        run_pipeline(config_path, output_dir, sample_dir, xml_path, delivery_month, max_failures)
+        run_pipeline(
+            config_path,
+            output_dir,
+            sample_dir,
+            xml_path,
+            delivery_month,
+            max_failures,
+            previous_run_dir,
+        )
     except click.ClickException:
         raise
     except Exception as error:
