@@ -14,6 +14,10 @@ Python-based web scraping tool for extracting and processing content from multip
 - ✅ Folder structure management
 - ✅ Comprehensive error reporting
 - ✅ Retry logic with exponential backoff
+- ✅ SFTP MDDB journal manifest generation from `<alpha_code>` values
+- ✅ Static corporate-fed exception list (`ABH`, `APB`, `JCX`)
+- ✅ Blocked-link audit for generated HTML
+- ✅ Delivery archives and Jira-ready summary generation
 
 ## Installation
 
@@ -23,7 +27,7 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-1. **Prepare URLs file** (`urls.txt`):
+1. **Prepare a URL list** (`urls.txt`) for a manual or small test run:
    ```
    https://example.com/path/to/page1
    https://example.com/path/to/page2
@@ -33,6 +37,19 @@ pip install -r requirements.txt
    ```bash
    python scraper.py --urls urls.txt --sample sample
    ```
+
+For a recurring SAGE export, generate the journal manifest from the newest
+MDDB XML on SFTP, then scrape the non-excluded journals:
+
+```bash
+python journal_source.py --config config.json
+python scraper.py --manifest journal_manifest.json --sample sample
+python package.py --output output --manifest journal_manifest.json
+```
+
+The SFTP username and password belong in `config.json`. The source expects
+files named `atypon-sage-mddb_<date>_<time>.xml` and extracts each journal's
+three-letter `<alpha_code>`.
 
 ## Usage
 
@@ -54,6 +71,13 @@ python scraper.py \
   --delay 1000
 ```
 
+### Manifest input
+
+`--manifest` is an alternative to `--urls`. It accepts the JSON file created
+by `journal_source.py`, skips records marked `excluded`, and processes both the
+`msg_url` and `eb_url` for each remaining journal. `--urls` remains available
+for ad hoc runs and tests; provide exactly one of the two options.
+
 ### Image mode — download a specific image from each page
 
 Use `--mode image` with a CSS selector that targets the `<img>` element directly (or a container that holds it). The scraper saves one image file per URL, named after the last path segment of the page URL.
@@ -73,7 +97,8 @@ Images are saved to `output/assets/`. No HTML files or `lib/`/`fonts/` assets ar
 | Option | Short | Description |
 |---|---|---|
 | `--config` | `-c` | Path to config JSON file (default: `config.json`) |
-| `--urls` | `-u` | Path to URLs text file (**required**) |
+| `--urls` | `-u` | Path to URLs text file; mutually exclusive with `--manifest` |
+| `--manifest` | | Path to JSON journal manifest; mutually exclusive with `--urls` |
 | `--sample` | `-s` | Path to sample directory with `lib/` and `fonts/` folders |
 | `--mode` | | `html` (default) or `image` — overrides config |
 | `--selector` | | CSS selector — overrides config |
@@ -91,6 +116,15 @@ Edit `config.json` to customize settings:
   "selector": "div.col-12.col-lg-8",
   "outputDir": "./output",
   "assetsPath": "assets",
+  "exceptionsPath": "known_exceptions.yaml",
+  "journalSource": {
+    "host": "sftp2.literatumonline.com",
+    "port": 22,
+    "username": "",
+    "password": "",
+    "remoteDir": "/sage/mddb/live/received",
+    "manifestPath": "./journal_manifest.json"
+  },
   "options": {
     "localizeImages": true,
     "deobfuscateEmails": true,
@@ -107,6 +141,8 @@ Edit `config.json` to customize settings:
 | `selector` | any CSS selector | Element to extract; in image mode targets the `<img>` or its container |
 | `outputDir` | path | Root output folder |
 | `assetsPath` | folder name | Subfolder inside `outputDir` for downloaded images |
+| `exceptionsPath` | path | YAML file containing static journal exceptions |
+| `journalSource` | object | SFTP connection and manifest output settings |
 
 ## Output Structure
 
@@ -124,6 +160,10 @@ output/
 ├── fonts/
 └── scraping_report.txt
 ```
+
+HTML runs also create `blocked_links_report.txt`, grouped by journal code.
+After scraping, `package.py` adds the two delivery archives and
+`DELIVERY_SUMMARY.md` to the output directory.
 
 **Image mode** (`--mode image`):
 ```
@@ -154,6 +194,21 @@ The tool generates `scraping_report.txt` with:
 - Image localization details
 - Email deobfuscation details
 - Detailed error messages for failed URLs
+
+`blocked_links_report.txt` lists links in generated HTML that resolve to
+`journals.sagepub.com`, so they can be reviewed before delivery.
+
+## Delivery packaging
+
+Run the packager after a completed HTML scrape:
+
+```bash
+python package.py --output output --manifest journal_manifest.json
+```
+
+It creates `editorial-board_YYYY-MM.zip`,
+`submission-guidelines_YYYY-MM.zip`, and `DELIVERY_SUMMARY.md`. Use
+`--month YYYY-MM` when producing a delivery for a specific month.
 
 ## Testing
 
