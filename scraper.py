@@ -14,6 +14,7 @@ from typing import List, Dict, Tuple, Optional
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import click
+from link_audit import audit_html, journal_code_from_url, write_report
 
 
 class ScraperReport:
@@ -103,6 +104,7 @@ class WebScraper:
         self.options = config.get("options", {})
         self.mode = config.get("mode", "html")
         self.report = ScraperReport()
+        self.blocked_links = {}
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': self.user_agent
@@ -478,6 +480,14 @@ class WebScraper:
             # Write file
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(output_html)
+
+            blocked_links = audit_html(output_html, url)
+            if blocked_links:
+                journal_code = journal_code_from_url(url)
+                self.blocked_links.setdefault(journal_code, [])
+                self.blocked_links[journal_code].extend(
+                    (url, blocked_url) for blocked_url in blocked_links
+                )
             
             self.report.add_success(url, filename)
             print(f"  ✓ Saved to: {output_path}")
@@ -570,9 +580,13 @@ class WebScraper:
         
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write(report_text)
+
+        blocked_links_path = self.output_dir / "blocked_links_report.txt"
+        write_report(blocked_links_path, self.blocked_links)
         
         print(f"\n{report_text}")
         print(f"\nReport saved to: {report_path}")
+        print(f"Blocked links report saved to: {blocked_links_path}")
         
         # Clean up checkpoint file on successful completion
         if checkpoint_file.exists():
