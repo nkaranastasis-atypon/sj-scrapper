@@ -83,3 +83,46 @@ def test_user_agent_is_loaded_from_config():
     scraper = WebScraper({**DEFAULT_CONFIG, "userAgent": "test-agent"})
 
     assert scraper.session.headers["User-Agent"] == "test-agent"
+
+
+def test_extract_content_tries_fallback_selectors():
+    scraper = WebScraper({
+        **DEFAULT_CONFIG,
+        "selector": "div.missing",
+        "selectors": ["div.missing", "div.old-template"],
+    })
+    html = "<html><body><div class='old-template'>Old template content</div></body></html>"
+
+    element = scraper.extract_content(html, "https://journals.example.test/author-instructions/AJS")
+
+    assert element is not None
+    assert element.get_text(strip=True) == "Old template content"
+    assert scraper.last_selector_match == "div.old-template"
+
+
+def test_corporate_fed_url_is_detected_from_exception_file(tmp_path):
+    exceptions_path = tmp_path / "exceptions.yaml"
+    exceptions_path.write_text("corporate_fed:\n  - code: AJS\n", encoding="utf-8")
+    scraper = WebScraper({
+        **DEFAULT_CONFIG,
+        "exceptionsPath": str(exceptions_path),
+    })
+
+    assert scraper.is_corporate_fed_url("https://journals.example.test/author-instructions/AJS")
+    assert not scraper.is_corporate_fed_url("https://journals.example.test/author-instructions/ABC")
+
+
+def test_process_url_skips_corporate_fed_journal_before_fetch(tmp_path):
+    exceptions_path = tmp_path / "exceptions.yaml"
+    exceptions_path.write_text("corporate_fed:\n  - code: AJS\n", encoding="utf-8")
+    scraper = WebScraper({
+        **DEFAULT_CONFIG,
+        "exceptionsPath": str(exceptions_path),
+    })
+    scraper.fetch_url = Mock()
+
+    result = scraper.process_url("https://journals.example.test/author-instructions/AJS")
+
+    assert result is True
+    scraper.fetch_url.assert_not_called()
+    assert "Excluded - corporate-fed" in scraper.report.generate_report()

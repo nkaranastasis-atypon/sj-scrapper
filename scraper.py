@@ -16,6 +16,7 @@ from typing import List, Dict, Tuple, Optional
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import click
+import yaml
 from link_audit import audit_html, journal_code_from_url, write_report
 
 
@@ -28,12 +29,17 @@ class ScraperReport:
         self.successful = 0
         self.failed = 0
         self.errors = []
+        self.skipped = []
         self.images_processed = []
         self.emails_decoded = []
     
     def add_success(self, url: str, filename: str):
         with self._lock:
             self.successful += 1
+
+    def add_skipped(self, url: str, reason: str):
+        with self._lock:
+            self.skipped.append({"url": url, "reason": reason})
         
     def add_error(self, url: str, error: str):
         with self._lock:
@@ -75,6 +81,14 @@ class ScraperReport:
             for err in self.errors:
                 lines.append(f"\nURL: {err['url']}")
                 lines.append(f"Error: {err['error']}")
+
+        if self.skipped:
+            lines.append("\n" + "=" * 80)
+            lines.append("Excluded - corporate-fed")
+            lines.append("=" * 80)
+            for entry in self.skipped:
+                lines.append(f"\nURL: {entry['url']}")
+                lines.append(f"Reason: {entry['reason']}")
         
         if self.images_processed:
             lines.append("\n" + "=" * 80)
@@ -102,6 +116,15 @@ class WebScraper:
     def __init__(self, config: Dict):
         self.config = config
         self.selector = config.get("selector", "div.col-12.col-lg-8")
+        configured_selectors = config.get("selectors") or []
+        if isinstance(configured_selectors, str):
+            configured_selectors = [configured_selectors]
+        self.selectors = [
+            selector for selector in [*configured_selectors, self.selector]
+            if selector and selector != ""
+        ]
+        self.selectors = list(dict.fromkeys(self.selectors))
+        self.last_selector_match = None
         self.user_agent = config.get(
             "userAgent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -110,12 +133,37 @@ class WebScraper:
         self.assets_path = config.get("assetsPath", "assets")
         self.options = config.get("options", {})
         self.mode = config.get("mode", "html")
+        self.exceptions_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
+        self._corporate_fed_codes = self._load_corporate_fed_codes()
         self.report = ScraperReport()
         self.blocked_links = {}
         self._blocked_links_lock = threading.Lock()
         self._thread_local = threading.local()
         self.session = requests.Session()
         self._configure_session(self.session)
+
+    def _load_corporate_fed_codes(self) -> set[str]:
+        """Return corporate-fed journal codes from the configured exceptions file."""
+        try:
+            with self.exceptions_path.open("r", encoding="utf-8") as exception_file:
+                exceptions = yaml.safe_load(exception_file) or {}
+        except OSError:
+            return set()
+
+        entries = exceptions.get("corporate_fed", [])
+        return {
+            str(entry.get("code", "")).strip().upper()
+            for entry in entries
+            if entry.get("code") and str(entry.get("code")).strip().upper() != "TBD"
+        }
+
+    def is_corporate_fed_url(self, url: str) -> bool:
+        """Return True when the journal code in the URL is excluded as corporate-fed."""
+        try:
+            journal_code = urlparse(url).path.rstrip("/").rsplit("/", 1)[-1].upper()
+        except Exception:
+            return False
+        return journal_code in self._corporate_fed_codes
 
     def _configure_session(self, session: requests.Session) -> requests.Session:
         session.headers.update({'User-Agent': self.user_agent})
@@ -149,16 +197,17 @@ class WebScraper:
         return None
     
     def extract_content(self, html: str, url: str) -> Optional[BeautifulSoup]:
-        """Extract content using CSS selector"""
+        """Extract content using the configured selector list, falling back in order."""
         soup = BeautifulSoup(html, 'lxml')
-        
-        # Try to find element using CSS selector
-        element = soup.select_one(self.selector)
-        
-        if not element:
-            return None
-        
-        return element
+        self.last_selector_match = None
+
+        for selector in self.selectors:
+            element = soup.select_one(selector)
+            if element:
+                self.last_selector_match = selector
+                return element
+
+        return None
     
     def deobfuscate_email(self, encoded: str) -> str:
         """Decode Cloudflare-protected email"""
@@ -460,7 +509,14 @@ class WebScraper:
             return self._process_url_image(url)
         try:
             print(f"Processing: {url}")
-            
+
+            if self.is_corporate_fed_url(url):
+                journal_code = urlparse(url).path.rstrip("/").rsplit("/", 1)[-1].upper()
+                self.report.add_skipped(url, "corporate-fed journal exclusion")
+                self.report.add_success(url, f"skipped:{journal_code}")
+                print(f"  ✓ Skipped {journal_code}: corporate-fed journal exclusion")
+                return True
+
             # Fetch HTML
             html = self.fetch_url(url)
             if not html:
