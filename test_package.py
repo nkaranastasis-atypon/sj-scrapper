@@ -36,7 +36,6 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
     with zipfile.ZipFile(outputs["editorial-board"]) as archive:
         assert set(archive.namelist()) == {
             "page/editorial-board_AJS.html",
-            "assets/logo.png",
             "lib/accordion.js",
             "fonts/font.woff",
             "changes_since_last_run.txt",
@@ -44,6 +43,7 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
     with zipfile.ZipFile(outputs["author-instructions"]) as archive:
         assert "page/author-instructions_AJS.html" in archive.namelist()
         assert "page/editorial-board_AJS.html" not in archive.namelist()
+        assert "assets/logo.png" in archive.namelist()
         assert "changes_since_last_run.txt" in archive.namelist()
         assert "run_manifest_20260922-142203.json" not in archive.namelist()
 

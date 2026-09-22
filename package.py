@@ -34,12 +34,18 @@ def matching_page_files(page_dir: Path, prefix: str) -> List[Path]:
     return sorted(page_dir.glob(f"{prefix}_*.html")) if page_dir.exists() else []
 
 
-def archive_paths(output_dir: Path, page_files: Iterable[Path], archive_path: Path) -> None:
-    """Create one archive with selected pages and shared delivery resources."""
+def archive_paths(
+    output_dir: Path,
+    page_files: Iterable[Path],
+    archive_path: Path,
+    include_assets: bool = True,
+) -> None:
+    """Create one archive with selected pages and delivery resources."""
+    directories = SHARED_DIRECTORIES if include_assets else ("lib", "fonts")
     with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for page_file in page_files:
             archive.write(page_file, Path("page") / page_file.name)
-        for directory_name in SHARED_DIRECTORIES:
+        for directory_name in directories:
             directory = output_dir / directory_name
             if not directory.exists():
                 continue
@@ -137,7 +143,12 @@ def package_delivery(
     for prefix, filename_template in PAGE_GROUPS.items():
         archive_path = output_dir / filename_template.format(month)
         page_files = matching_page_files(page_dir, prefix)
-        archive_paths(output_dir, page_files, archive_path)
+        archive_paths(
+            output_dir,
+            page_files,
+            archive_path,
+            include_assets=prefix == "author-instructions",
+        )
         with zipfile.ZipFile(archive_path, "a", compression=zipfile.ZIP_DEFLATED) as archive:
             if change_report.exists():
                 archive.write(change_report, change_report.name)
