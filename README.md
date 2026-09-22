@@ -23,6 +23,7 @@ Python-based web scraping tool for extracting and processing content from multip
 
 ```bash
 pip install -r requirements.txt
+copy config.example.json config.json
 ```
 
 ## Quick Start
@@ -47,9 +48,12 @@ python scraper.py --manifest journal_manifest.json --sample sample
 python package.py --output output --manifest journal_manifest.json
 ```
 
-The SFTP username and password belong in `config.json`. The source expects
-files named `atypon-sage-mddb_<date>_<time>.xml` and extracts each journal's
-three-letter `<alpha_code>`.
+The SFTP username and private key path belong in the local, ignored
+`config.json`; start from `config.example.json` and never commit credentials
+or private-key paths.
+The source expects files named `atypon-sage-mddb_<date>_<time>.xml` and
+extracts each journal's three-letter `<alpha_code>`. The key path is passed to
+Paramiko as `key_filename`.
 
 ## Usage
 
@@ -121,7 +125,7 @@ Edit `config.json` to customize settings:
     "host": "sftp2.literatumonline.com",
     "port": 22,
     "username": "",
-    "password": "",
+    "keyFilename": "",
     "remoteDir": "/sage/mddb/live/received",
     "manifestPath": "./journal_manifest.json"
   },

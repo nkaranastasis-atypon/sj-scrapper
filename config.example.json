@@ -9,7 +9,7 @@
     "host": "sftp2.literatumonline.com",
     "port": 22,
     "username": "",
-    "password": "",
+    "keyFilename": "",
     "remoteDir": "/sage/mddb/live/received",
     "manifestPath": "./journal_manifest.json"
   },
