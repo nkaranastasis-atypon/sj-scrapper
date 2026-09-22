@@ -103,11 +103,17 @@ def fetch_latest_mddb_xml(source_config: Dict[str, Any]) -> bytes:
         connect_options["key_filename"] = source_config["keyFilename"]
     if source_config.get("port"):
         connect_options["port"] = source_config["port"]
+    connect_options["timeout"] = source_config.get("connectTimeout", 30)
+    connect_options["banner_timeout"] = source_config.get("bannerTimeout", 30)
+    connect_options["auth_timeout"] = source_config.get("authTimeout", 30)
 
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         client.connect(**connect_options)
+        transport = client.get_transport()
+        if transport:
+            transport.settimeout(source_config.get("readTimeout", 120))
         with client.open_sftp() as sftp:
             filename = newest_mddb_filename(sftp.listdir(remote_dir))
             with sftp.open(f"{remote_dir.rstrip('/')}/{filename}", "rb") as remote_file:
@@ -118,13 +124,19 @@ def fetch_latest_mddb_xml(source_config: Dict[str, Any]) -> bytes:
         client.close()
 
 
+def generate_manifest_from_xml(xml_path: Path, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Build a manifest from a local MDDB XML file for offline rehearsals."""
+    codes = parse_alpha_codes(xml_path.read_bytes())
+    exception_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
+    return build_manifest(codes, load_excluded_codes(exception_path))
+
+
 def generate_manifest(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Download, parse, and turn the latest MDDB XML into manifest records."""
     source_config = config.get("journalSource", {})
     codes = parse_alpha_codes(fetch_latest_mddb_xml(source_config))
     exception_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
-    excluded_codes = load_excluded_codes(exception_path)
-    return build_manifest(codes, excluded_codes)
+    return build_manifest(codes, load_excluded_codes(exception_path))
 
 
 @click.command()

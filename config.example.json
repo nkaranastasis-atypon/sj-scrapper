@@ -11,7 +11,11 @@
     "username": "",
     "keyFilename": "",
     "remoteDir": "/sage/mddb/live/received",
-    "manifestPath": "./journal_manifest.json"
+    "manifestPath": "./journal_manifest.json",
+    "connectTimeout": 30,
+    "bannerTimeout": 30,
+    "authTimeout": 30,
+    "readTimeout": 120
   },
   "options": {
     "localizeImages": true,

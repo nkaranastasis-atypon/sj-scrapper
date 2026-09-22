@@ -55,6 +55,28 @@ The source expects files named `atypon-sage-mddb_<date>_<time>.xml` and
 extracts each journal's three-letter `<alpha_code>`. The key path is passed to
 Paramiko as `key_filename`.
 
+For a guarded end-to-end run, use `run_pipeline.py`. It creates a fresh output
+directory, validates the manifest, runs the scrape, checks both reports, and
+validates the delivery archives before completing:
+
+```bash
+python run_pipeline.py --config config.json --sample sample
+```
+
+For a safe rehearsal with the recorded XML snippet, skip SFTP with `--xml`:
+
+```bash
+python run_pipeline.py \
+  --config config.json \
+  --xml "instructions/atypon-sage-mddb_01-01-2026_21-00-03 - snippet.xml" \
+  --sample sample \
+  --max-failures 2
+```
+
+The pipeline stops before packaging if any sanity check fails. Use
+`--max-failures` only when a test run intentionally includes known extraction
+failures; the default is zero.
+
 ## Usage
 
 ### Basic Command
