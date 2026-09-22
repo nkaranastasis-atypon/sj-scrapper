@@ -280,7 +280,7 @@ def run_pipeline(
 
 
 @click.command()
-@click.option("--config", "config_path", type=click.Path(exists=True, path_type=Path), default=Path("config.json"))
+@click.option("--config", "config_path", type=click.Path(exists=True, path_type=Path), default=Path("config/config.json"))
 @click.option("--output", "output_dir", type=click.Path(path_type=Path), default=None)
 @click.option("--sample", "sample_dir", type=click.Path(exists=True, path_type=Path), default=Path("sample"))
 @click.option("--xml", "xml_path", type=click.Path(exists=True, path_type=Path), default=None,

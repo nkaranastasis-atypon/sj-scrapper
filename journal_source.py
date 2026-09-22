@@ -212,7 +212,7 @@ def generate_manifest(
 
 
 @click.command()
-@click.option("--config", "config_path", type=click.Path(exists=True), default="config.json")
+@click.option("--config", "config_path", type=click.Path(exists=True), default="config/config.json")
 @click.option("--output", "output_path", type=click.Path(), default=None)
 def main(config_path: str, output_path: str | None) -> None:
     """Create a journal manifest from the newest MDDB SFTP export."""

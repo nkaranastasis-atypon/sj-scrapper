@@ -1,9 +1,0 @@
-# Add your test URLs here, one per line
-# Example URLs for testing (replace with your actual URLs):
-
-https://journals.sagepub.com/author-instructions/AJS
-https://journals.sagepub.com/author-instructions/psp
-https://journals.sagepub.com/author-instructions/VET
-https://journals.sagepub.com/editorial-board/Ajs
-https://journals.sagepub.com/editorial-board/PMJ
-https://journals.sagepub.com/editorial-board/sgo

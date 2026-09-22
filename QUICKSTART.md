@@ -70,7 +70,7 @@ https://site.com/journal2/editorial-board
 
 ### Step 2: Customize Settings (Optional)
 
-Edit `config.json` if needed:
+Edit `config/config.json` if needed:
 
 ```json
 {
@@ -115,7 +115,7 @@ python scraper.py --urls urls.txt --sample sample --selector "div.main-content"
 
 ### Images not downloading
 - Check network access to image URLs
-- Increase timeout: edit `config.json` → `"timeout": 60`
+- Increase timeout: edit `config/config.json` → `"timeout": 60`
 
 ### Rate limited by server
 - Increase delay: `--delay 2000` (2 seconds between requests)

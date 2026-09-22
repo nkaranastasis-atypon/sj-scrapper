@@ -826,7 +826,7 @@ class WebScraper:
 
 
 @click.command()
-@click.option('--config', '-c', type=click.Path(exists=True), default='config.json',
+@click.option('--config', '-c', type=click.Path(exists=True), default='config/config.json',
               help='Path to config JSON file')
 @click.option('--urls', '-u', type=click.Path(exists=True),
               help='Path to text file with URLs (one per line)')

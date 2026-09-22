@@ -23,7 +23,7 @@ Python-based web scraping tool for extracting and processing content from multip
 
 ```bash
 pip install -r requirements.txt
-copy config.example.json config.json
+copy config\config.example.json config\config.json
 ```
 
 ## Quick Start
@@ -43,13 +43,13 @@ For a recurring SAGE export, generate the journal manifest from the newest
 MDDB XML on SFTP, then scrape the non-excluded journals:
 
 ```bash
-python journal_source.py --config config.json
+python journal_source.py --config config\config.json
 python scraper.py --manifest journal_manifest.json --sample sample
 python package.py --output output --manifest journal_manifest.json
 ```
 
 The SFTP username and private key path belong in the local, ignored
-`config.json`; start from `config.example.json` and never commit credentials
+`config\config.json`; start from `config\config.example.json` and never commit credentials
 or private-key paths.
 The source expects files named `atypon-sage-mddb_<date>_<time>.xml` and
 extracts each journal's three-letter `<alpha_code>`. The key path is passed to
@@ -60,14 +60,14 @@ directory, validates the manifest, runs the scrape, checks both reports, and
 validates the delivery archives before completing:
 
 ```bash
-python run_pipeline.py --config config.json --sample sample
+python run_pipeline.py --config config\config.json --sample sample
 ```
 
 For a safe rehearsal with the recorded XML snippet, skip SFTP with `--xml`:
 
 ```bash
 python run_pipeline.py \
-  --config config.json \
+  --config config\config.json \
   --xml "instructions/atypon-sage-mddb_01-01-2026_21-00-03 - snippet.xml" \
   --sample sample \
   --max-failures 2
@@ -89,7 +89,7 @@ python scraper.py --urls urls.txt --sample sample
 
 ```bash
 python scraper.py \
-  --config config.json \
+  --config config/config.json \
   --urls urls.txt \
   --sample sample \
   --selector "div.content" \
@@ -122,7 +122,7 @@ Images are saved to `output/assets/`. No HTML files or `lib/`/`fonts/` assets ar
 
 | Option | Short | Description |
 |---|---|---|
-| `--config` | `-c` | Path to config JSON file (default: `config.json`) |
+| `--config` | `-c` | Path to config JSON file (default: `config/config.json`) |
 | `--urls` | `-u` | Path to URLs text file; mutually exclusive with `--manifest` |
 | `--manifest` | | Path to JSON journal manifest; mutually exclusive with `--urls` |
 | `--sample` | `-s` | Path to sample directory with `lib/` and `fonts/` folders |
@@ -134,7 +134,7 @@ Images are saved to `output/assets/`. No HTML files or `lib/`/`fonts/` assets ar
 
 ## Configuration
 
-Edit `config.json` to customize settings:
+Edit `config/config.json` to customize settings:
 
 ```json
 {

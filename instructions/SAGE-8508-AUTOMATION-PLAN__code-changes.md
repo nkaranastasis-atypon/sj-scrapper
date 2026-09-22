@@ -24,7 +24,7 @@ single-journal runs.
   / root-relative / relative paths), and `process_images`' background-image
   regex. Use recorded HTML fixtures, not live network calls.
 - Extract the hardcoded `selector` default and `User-Agent` string in
-  `WebScraper.__init__` into `config.json`, with the current values as
+  `WebScraper.__init__` into `config/config.json`, with the current values as
   defaults, so later phases can add fallback selectors without touching code.
 - Acceptance: `pytest` green, no behavior change on a small sample run.
 

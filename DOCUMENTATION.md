@@ -11,10 +11,10 @@
 ```
 c:\Atypon\scrapper/
 ├── scraper.py              # Main scraper tool
-├── config.json             # Configuration file
+├── config/                 # Configuration files
 ├── requirements.txt        # Python dependencies
 ├── urls.txt               # Input URLs (one per line)
-├── test_scraper.py        # Test script
+├── tests/                  # Test suite
 ├── README.md              # Full documentation
 ├── QUICKSTART.md          # Quick start guide
 ├── instructions/
@@ -65,7 +65,7 @@ python scraper.py --urls urls.txt --sample sample
 ### Advanced Options
 ```bash
 python scraper.py \
-  --config config.json \
+   --config config/config.json \
   --urls urls.txt \
   --sample sample \
   --selector "div.main-content" \
@@ -75,7 +75,7 @@ python scraper.py \
 
 ## 📊 Configuration
 
-**config.json**:
+**config/config.json**:
 ```json
 {
   "selector": "div.col-12.col-lg-8",     // CSS selector for content
@@ -210,7 +210,7 @@ Error: No element found matching selector: div.col-12.col-lg-8
 **Solution**:
 - Check network connectivity
 - Verify image URLs are accessible
-- Increase timeout in config.json
+- Increase timeout in config/config.json
 - Check for authentication requirements
 
 ### Issue: Server rate limiting
@@ -261,7 +261,7 @@ Install with: `pip install -r requirements.txt`
 4. **Adjust if Needed**:
    - Change CSS selector if content not extracted correctly
    - Adjust delay if rate limited
-   - Modify config.json as needed
+   - Modify config/config.json as needed
 
 5. **Production Run**:
    - Prepare full `urls.txt` with all URLs
@@ -279,11 +279,11 @@ If you encounter issues:
 ## 📄 Files Reference
 
 - `scraper.py` - Main tool (635 lines, fully commented)
-- `config.json` - Configuration
+- `config/config.json` - Configuration
 - `requirements.txt` - Dependencies
 - `README.md` - Full documentation
 - `QUICKSTART.md` - Quick start guide
-- `test_scraper.py` - Test script
+- `tests/` - Test suite
 - `urls.txt` - Input URLs
 
 ---

@@ -1,4 +1,4 @@
-config.json
+config/config.json
 journal_manifest.json
 output/
 __pycache__/

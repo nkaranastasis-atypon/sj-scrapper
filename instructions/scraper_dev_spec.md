@@ -89,13 +89,13 @@ Build a Python CLI tool that scrapes web pages and processes content with config
 **CLI Interface:**
 ```bash
 # Basic usage
-scraper --config config.json
+scraper --config config/config.json
 
 # Override options
-scraper --config config.json --delay 1000 --no-images
+scraper --config config/config.json --delay 1000 --no-images
 
 # Output directory
-scraper --config config.json --output ./results
+scraper --config config/config.json --output ./results
 ```
 
 ## Processing Pipeline
