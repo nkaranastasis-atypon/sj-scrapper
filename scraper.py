@@ -30,6 +30,7 @@ class ScraperReport:
         self.failed = 0
         self.errors = []
         self.skipped = []
+        self.selector_matches = []
         self.images_processed = []
         self.emails_decoded = []
     
@@ -52,6 +53,13 @@ class ScraperReport:
                 "original": original,
                 "local": local,
                 "filename": filename
+            })
+
+    def add_selector_match(self, selector: str, url: str):
+        with self._lock:
+            self.selector_matches.append({
+                "selector": selector,
+                "url": url,
             })
     
     def add_email(self, encoded: str, decoded: str):
@@ -89,6 +97,14 @@ class ScraperReport:
             for entry in self.skipped:
                 lines.append(f"\nURL: {entry['url']}")
                 lines.append(f"Reason: {entry['reason']}")
+
+        if self.selector_matches:
+            lines.append("\n" + "=" * 80)
+            lines.append("Selector matches")
+            lines.append("=" * 80)
+            for match in self.selector_matches:
+                lines.append(f"\nURL: {match['url']}")
+                lines.append(f"Selector: {match['selector']}")
         
         if self.images_processed:
             lines.append("\n" + "=" * 80)
@@ -135,6 +151,7 @@ class WebScraper:
         self.mode = config.get("mode", "html")
         self.exceptions_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
         self._corporate_fed_codes = self._load_corporate_fed_codes()
+        self._old_template_image_codes = self._load_old_template_image_codes()
         self.report = ScraperReport()
         self.blocked_links = {}
         self._blocked_links_lock = threading.Lock()
@@ -144,26 +161,41 @@ class WebScraper:
 
     def _load_corporate_fed_codes(self) -> set[str]:
         """Return corporate-fed journal codes from the configured exceptions file."""
+        return self._load_exception_codes("corporate_fed")
+
+    def _load_old_template_image_codes(self) -> set[str]:
+        """Return journal codes that require extra page-level image discovery."""
+        return self._load_exception_codes("old_template_images")
+
+    def _load_exception_codes(self, category: str) -> set[str]:
+        """Load a category of journal codes from the exceptions YAML file."""
         try:
             with self.exceptions_path.open("r", encoding="utf-8") as exception_file:
                 exceptions = yaml.safe_load(exception_file) or {}
         except OSError:
             return set()
 
-        entries = exceptions.get("corporate_fed", [])
+        entries = exceptions.get(category, [])
         return {
             str(entry.get("code", "")).strip().upper()
             for entry in entries
             if entry.get("code") and str(entry.get("code")).strip().upper() != "TBD"
         }
 
+    def _journal_code_from_url(self, url: str) -> str:
+        """Extract the journal code from a Sage URL."""
+        try:
+            return urlparse(url).path.rstrip("/").rsplit("/", 1)[-1].upper()
+        except Exception:
+            return ""
+
     def is_corporate_fed_url(self, url: str) -> bool:
         """Return True when the journal code in the URL is excluded as corporate-fed."""
-        try:
-            journal_code = urlparse(url).path.rstrip("/").rsplit("/", 1)[-1].upper()
-        except Exception:
-            return False
-        return journal_code in self._corporate_fed_codes
+        return self._journal_code_from_url(url) in self._corporate_fed_codes
+
+    def is_old_template_image_journal(self, url: str) -> bool:
+        """Return True when the journal needs page-level pb-assets discovery."""
+        return self._journal_code_from_url(url) in self._old_template_image_codes
 
     def _configure_session(self, session: requests.Session) -> requests.Session:
         session.headers.update({'User-Agent': self.user_agent})
@@ -205,6 +237,7 @@ class WebScraper:
             element = soup.select_one(selector)
             if element:
                 self.last_selector_match = selector
+                self.report.add_selector_match(selector, url)
                 return element
 
         return None
@@ -356,32 +389,54 @@ class WebScraper:
             print(f"Warning: Failed to download image {img_url}: {e}")
             return None
     
-    def process_images(self, element: BeautifulSoup, base_url: str, assets_dir: Path) -> None:
-        """Find and localize images"""
+    def _discover_page_level_images(self, base_url: str, assets_dir: Path, page_html: Optional[str] = None) -> set[str]:
+        """Return page-level /pb-assets/cmscontent image URLs referenced anywhere on the page."""
+        discovered: set[str] = set()
+        if not page_html:
+            return discovered
+
+        page_soup = BeautifulSoup(page_html, 'lxml')
+        for tag in page_soup.find_all(attrs={"src": True}):
+            src = tag.get("src", "")
+            if src and "/pb-assets/cmscontent/" in src:
+                discovered.add(src)
+        for tag in page_soup.find_all(attrs={"href": True}):
+            href = tag.get("href", "")
+            if href and "/pb-assets/cmscontent/" in href:
+                discovered.add(href)
+        return discovered
+
+    def process_images(self, element: BeautifulSoup, base_url: str, assets_dir: Path, page_html: Optional[str] = None) -> None:
+        """Find and localize images, including page-level old-template /pb-assets references."""
         if not self.options.get("localizeImages", True):
             return
-        
+
+        seen: set[str] = set()
+
         # Process <img> tags
         for img in element.find_all("img"):
             src = img.get("src", "")
             if src and not src.startswith("data:"):
+                if src in seen:
+                    continue
+                seen.add(src)
                 filename = self.download_image(src, base_url, assets_dir)
                 if filename:
                     local_path = f"../{self.assets_path}/{filename}"
                     img['data-original-src'] = src
                     img['src'] = local_path
                     self.report.add_image(src, local_path, filename)
-        
+
         # Process background-image in style attributes
         elements_with_style = element.find_all(style=re.compile(r'background-image'))
-        
+
         for elem in elements_with_style:
             style = elem.get('style', '')
-            # Find url(...) in style
             url_match = re.search(r'url\(["\']?([^"\')]+)["\']?\)', style)
             if url_match:
                 img_url = url_match.group(1)
-                if not img_url.startswith("data:"):
+                if img_url not in seen and not img_url.startswith("data:"):
+                    seen.add(img_url)
                     filename = self.download_image(img_url, base_url, assets_dir)
                     if filename:
                         local_path = f"../{self.assets_path}/{filename}"
@@ -389,6 +444,15 @@ class WebScraper:
                         elem['style'] = new_style
                         elem['data-original-style'] = style
                         self.report.add_image(img_url, local_path, filename)
+
+        if page_html and (self.is_old_template_image_journal(base_url) or "pb-assets/cmscontent/" in page_html):
+            for src in self._discover_page_level_images(base_url, assets_dir, page_html):
+                if src in seen:
+                    continue
+                seen.add(src)
+                filename = self.download_image(src, base_url, assets_dir)
+                if filename:
+                    self.report.add_image(src, f"../{self.assets_path}/{filename}", filename)
     
     def wrap_in_template(self, content: BeautifulSoup) -> str:
         """Wrap content in HTML template"""
@@ -533,7 +597,7 @@ class WebScraper:
             page_dir.mkdir(parents=True, exist_ok=True)
             
             # Process images
-            self.process_images(element, url, assets_dir)
+            self.process_images(element, url, assets_dir, page_html=html)
             
             # Process emails
             self.process_emails(element)

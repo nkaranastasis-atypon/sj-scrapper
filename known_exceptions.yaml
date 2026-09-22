@@ -23,4 +23,25 @@ corporate_fed:
     code: JCX
     notes: "Corporate-site-fed; exclude from the automated export."
 
-old_template_images: []
+old_template_images:
+  - name: "About Campus"
+    code: ACA
+    notes: "Old template with page-level pb-assets/cmscontent references."
+  - name: "Journal of Veterinary Diagnostic Investigation"
+    code: VDI
+    notes: "Old template with page-level pb-assets/cmscontent references."
+  - name: "Veterinary Pathology"
+    code: VET
+    notes: "Old template with page-level pb-assets/cmscontent references."
+  - name: "Journal of Children's Orthopaedics"
+    code: CHO
+    notes: "Old template with page-level pb-assets/cmscontent references."
+  - name: "Palliative Medicine"
+    code: PMJ
+    notes: "Old template with page-level pb-assets/cmscontent references."
+  - name: "Personality Science"
+    code: PPP
+    notes: "Old template with page-level pb-assets/cmscontent references."
+  - name: "Workplace Health & Safety"
+    code: WHS
+    notes: "Old template with page-level pb-assets/cmscontent references."

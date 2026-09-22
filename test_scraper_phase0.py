@@ -126,3 +126,45 @@ def test_process_url_skips_corporate_fed_journal_before_fetch(tmp_path):
     assert result is True
     scraper.fetch_url.assert_not_called()
     assert "Excluded - corporate-fed" in scraper.report.generate_report()
+
+
+def test_report_records_selector_match():
+    scraper = WebScraper({**DEFAULT_CONFIG, "selectors": ["div.main", "div.old-template"]})
+    html = "<html><body><div class='old-template'>content</div></body></html>"
+
+    scraper.extract_content(html, "https://journals.example.test/author-instructions/AJS")
+
+    report = scraper.report.generate_report()
+    assert "Selector matches" in report
+    assert "div.old-template" in report
+
+
+def test_process_images_discovers_page_level_pb_assets(tmp_path):
+    scraper = WebScraper(DEFAULT_CONFIG)
+    response = Mock(content=b"image", headers={})
+    response.raise_for_status.return_value = None
+    scraper.session.get = Mock(return_value=response)
+    page_html = """
+    <html><body>
+      <div class='main'>content</div>
+      <img src='/pb-assets/cmscontent/AJS/example.png'>
+    </body></html>
+    """
+    element = BeautifulSoup("<div class='main'>content</div>", "lxml").div
+
+    scraper.process_images(element, "https://journals.example.test/author-instructions/AJS", tmp_path, page_html=page_html)
+
+    assert (tmp_path / "example.png").exists()
+    assert any("/pb-assets/cmscontent/AJS/example.png" in entry["original"] for entry in scraper.report.images_processed)
+
+
+def test_old_template_exception_codes_are_loaded_from_yaml(tmp_path):
+    exceptions_path = tmp_path / "exceptions.yaml"
+    exceptions_path.write_text(
+        "corporate_fed:\n  - code: ABH\nold_template_images:\n  - code: VET\n",
+        encoding="utf-8",
+    )
+    scraper = WebScraper({**DEFAULT_CONFIG, "exceptionsPath": str(exceptions_path)})
+
+    assert scraper.is_old_template_image_journal("https://journals.example.test/author-instructions/VET")
+    assert not scraper.is_old_template_image_journal("https://journals.example.test/author-instructions/ABC")
