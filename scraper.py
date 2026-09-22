@@ -513,9 +513,12 @@ class WebScraper:
     
     def run(self, urls_file: Path, sample_dir: Optional[Path] = None, resume: bool = True):
         """Main execution method"""
-        # Read URLs from file
         with open(urls_file, 'r', encoding='utf-8') as f:
             urls = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+        self.run_urls(urls, sample_dir, resume)
+
+    def run_urls(self, urls: List[str], sample_dir: Optional[Path] = None, resume: bool = True):
+        """Process a supplied list of URLs."""
         
         # Check for checkpoint file to resume
         checkpoint_file = self.output_dir / '.scraper_checkpoint.txt'
@@ -601,8 +604,10 @@ class WebScraper:
 @click.command()
 @click.option('--config', '-c', type=click.Path(exists=True), default='config.json',
               help='Path to config JSON file')
-@click.option('--urls', '-u', type=click.Path(exists=True), required=True,
+@click.option('--urls', '-u', type=click.Path(exists=True),
               help='Path to text file with URLs (one per line)')
+@click.option('--manifest', type=click.Path(exists=True),
+              help='Path to journal manifest JSON produced by journal_source.py')
 @click.option('--sample', '-s', type=click.Path(exists=True),
               help='Path to sample directory with lib/ and fonts/ folders')
 @click.option('--selector', type=str,
@@ -615,7 +620,7 @@ class WebScraper:
               help='Start from beginning, ignoring checkpoint file')
 @click.option('--mode', type=click.Choice(['html', 'image']), default=None,
               help='Scraping mode: html (extract page section, default) or image (download a specific image element)')
-def main(config, urls, sample, selector, output, delay, no_resume, mode):
+def main(config, urls, manifest, sample, selector, output, delay, no_resume, mode):
     """Web scraper tool - Extract and process web pages"""
     
     # Load config
@@ -634,9 +639,23 @@ def main(config, urls, sample, selector, output, delay, no_resume, mode):
     
     # Create and run scraper
     scraper = WebScraper(config_data)
-    
     sample_path = Path(sample) if sample else Path('sample')
-    scraper.run(Path(urls), sample_path, resume=not no_resume)
+    if bool(urls) == bool(manifest):
+        raise click.UsageError('Provide exactly one of --urls or --manifest.')
+    if urls:
+        scraper.run(Path(urls), sample_path, resume=not no_resume)
+        return
+
+    with open(manifest, encoding='utf-8') as manifest_file:
+        records = json.load(manifest_file)
+    manifest_urls = [
+        url
+        for record in records
+        if not record.get('excluded', False)
+        for url in (record.get('msg_url'), record.get('eb_url'))
+        if url
+    ]
+    scraper.run_urls(manifest_urls, sample_path, resume=not no_resume)
 
 
 if __name__ == '__main__':

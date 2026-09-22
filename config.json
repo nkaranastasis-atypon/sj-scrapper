@@ -4,6 +4,15 @@
   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "outputDir": "./output",
   "assetsPath": "assets",
+  "exceptionsPath": "known_exceptions.yaml",
+  "journalSource": {
+    "host": "sftp2.literatumonline.com",
+    "port": 22,
+    "username": "",
+    "password": "",
+    "remoteDir": "/sage/mddb/live/received",
+    "manifestPath": "./journal_manifest.json"
+  },
   "options": {
     "localizeImages": true,
     "deobfuscateEmails": true,

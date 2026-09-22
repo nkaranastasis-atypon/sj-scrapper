@@ -1,0 +1,26 @@
+# Known MSG/Editorial Board export exceptions for SAGE (CNP delivery).
+#
+# Source: SAGE-8508 initial exception list. Keep this file as the static,
+# reviewable source of truth for journals excluded from automated scraping.
+#
+# category values used by journal_source.py / template_detector.py (Phase 2):
+#   corporate_fed      -> MSG content is fed from the corporate site, not a
+#                          Page Builder rich-text widget. Skip fetch, report
+#                          as excluded, don't treat as a scraper failure.
+#   old_template_images -> MSG page uses the old (pre-rich-text) template and
+#                          embeds images/tables that live outside the
+#                          extracted DOM subtree. Needs the broadened
+#                          pb-assets/cmscontent lookup described in Phase 2.
+
+corporate_fed:
+  - name: "Abhigyan"
+    code: ABH
+    notes: "Corporate-site-fed; exclude from the automated export."
+  - name: "Applied Biosafety"
+    code: APB
+    notes: "Corporate-site-fed; exclude from the automated export."
+  - name: "Journal of Correctional Health Care"
+    code: JCX
+    notes: "Corporate-site-fed; exclude from the automated export."
+
+old_template_images: []
