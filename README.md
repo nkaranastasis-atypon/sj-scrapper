@@ -16,7 +16,7 @@ Python-based web scraping tool for extracting and processing content from multip
 - ✅ Retry logic with exponential backoff
 - ✅ SFTP MDDB journal manifest generation from `<alpha_code>` values
 - ✅ Static corporate-fed exception list (`ABH`, `APB`, `JCX`)
-- ✅ Blocked-link audit for generated HTML
+- ✅ Static SAGE-link audit for generated HTML
 - ✅ Delivery archives and Jira-ready summary generation
 
 ## Installation
@@ -189,7 +189,7 @@ output/
 └── scraping_report.txt
 ```
 
-HTML runs also create `blocked_links_report.txt`, grouped by journal code.
+HTML runs also create `static_sage_links_report.txt`, grouped by journal code.
 After scraping, `package.py` adds the two delivery archives and
 `DELIVERY_SUMMARY.md` to the output directory.
 
@@ -223,7 +223,7 @@ The tool generates `scraping_report.txt` with:
 - Email deobfuscation details
 - Detailed error messages for failed URLs
 
-`blocked_links_report.txt` lists links in generated HTML that resolve to
+`static_sage_links_report.txt` lists links in generated HTML that resolve to
 `journals.sagepub.com`, so they can be reviewed before delivery.
 
 ## Delivery packaging

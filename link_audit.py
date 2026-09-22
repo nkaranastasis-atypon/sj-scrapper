@@ -44,7 +44,7 @@ def journal_code_from_url(url: str) -> str:
 def format_report(entries: Mapping[str, Iterable[tuple[str, str]]]) -> str:
     """Format audit entries grouped by journal code."""
     lines = [
-        "BLOCKED LINKS REPORT",
+        "STATIC SAGE LINKS REPORT",
         "=" * 80,
     ]
     total = sum(1 for journal_entries in entries.values() for _ in journal_entries)
@@ -61,5 +61,5 @@ def format_report(entries: Mapping[str, Iterable[tuple[str, str]]]) -> str:
 
 
 def write_report(report_path: Path, entries: Mapping[str, Iterable[tuple[str, str]]]) -> None:
-    """Write the grouped blocked-link report."""
+    """Write the grouped static SAGE links report."""
     report_path.write_text(format_report(entries), encoding="utf-8")

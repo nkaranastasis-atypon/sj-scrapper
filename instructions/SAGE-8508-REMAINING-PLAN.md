@@ -15,7 +15,7 @@ scope of the scraper.
   corporate-fed exclusions `ABH`, `APB`, and `JCX`.
 - **Phase 3:** Generated HTML is audited for resolved links to
   `journals.sagepub.com`; results are grouped in
-  `blocked_links_report.txt`.
+  `static_sage_links_report.txt`.
 - **Phase 5 core:** `package.py` creates split delivery archives and a
   `DELIVERY_SUMMARY.md`.
 

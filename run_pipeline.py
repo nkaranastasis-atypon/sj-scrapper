@@ -253,8 +253,8 @@ def run_pipeline(
         click.echo("\nScraping interrupted; preserving checkpoint and packaging completed pages.")
         scraper.write_reports()
     report_path = output_dir / "scraping_report.txt"
-    blocked_path = output_dir / "blocked_links_report.txt"
-    if not report_path.exists() or not blocked_path.exists():
+    static_links_path = output_dir / "static_sage_links_report.txt"
+    if not report_path.exists() or not static_links_path.exists():
         raise click.ClickException("Reporting step failed: expected report files are missing")
     if scraper.report.failed > max_failures:
         raise click.ClickException(

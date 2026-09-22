@@ -74,7 +74,7 @@ single-journal runs.
   `process_url` completes: find `<a href>` values that resolve (after
   `urljoin`) to the `journals.sagepub.com` domain and aren't `mailto:`/anchor
   links. These are the links CNP flagged in SAGE-7808 as unreachable from
-  China. Collect them into `blocked_links_report.txt`, grouped by journal
+  China. Collect them into `static_sage_links_report.txt`, grouped by journal
   code, so this is a delivery artifact instead of something CNP discovers and
   reports back weeks later.
 - Acceptance: report lists every such link found in a full run; spot-check a
@@ -100,7 +100,7 @@ single-journal runs.
   `editorial-board_{YYYY-MM}.zip` and `submission-guidelines_{YYYY-MM}.zip`
   (matching the naming already used when these were delivered in SAGE-8091),
   and generate a single `DELIVERY_SUMMARY.md` combining: total counts,
-  excluded/corporate-fed list, blocked-links summary, and
+  excluded/corporate-fed list, static SAGE-links summary, and
   changes-since-last-run — something that can be pasted directly into the
   Jira comment instead of written by hand each time.
 - Acceptance: one command produces delivery-ready zips plus a paste-ready

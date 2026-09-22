@@ -202,3 +202,17 @@ def test_old_template_exception_codes_are_loaded_from_yaml(tmp_path):
 
     assert scraper.is_old_template_image_journal("https://journals.example.test/author-instructions/VET")
     assert not scraper.is_old_template_image_journal("https://journals.example.test/author-instructions/ABC")
+
+
+def test_run_removes_intermediate_progress_reports_when_complete(tmp_path):
+    scraper = WebScraper({
+        **DEFAULT_CONFIG,
+        "outputDir": str(tmp_path),
+        "options": {"maxWorkers": 1},
+    })
+    scraper.process_url = Mock(return_value=True)
+    urls = [f"https://journals.example.test/author-instructions/JNL{index}" for index in range(100)]
+
+    scraper.run_urls(urls, resume=False)
+
+    assert not list(tmp_path.glob("progress_report_*_of_*.txt"))

@@ -761,6 +761,7 @@ class WebScraper:
                 executor.shutdown(wait=True)
         
         self.write_reports()
+        self._remove_intermediate_reports()
 
         # Clean up checkpoint file on successful completion
         if checkpoint_file.exists():
@@ -782,20 +783,25 @@ class WebScraper:
                 print(f"{'='*80}\n")
                 self._save_intermediate_report(completed, total)
 
+    def _remove_intermediate_reports(self):
+        """Remove progress snapshots after a run completes successfully."""
+        for report_path in self.output_dir.glob("progress_report_*_of_*.txt"):
+            report_path.unlink()
+
     def write_reports(self):
-        """Write the current scraping and blocked-link reports."""
+        """Write the current scraping and static SAGE links reports."""
         report_text = self.report.generate_report()
         report_path = self.output_dir / "scraping_report.txt"
         
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write(report_text)
 
-        blocked_links_path = self.output_dir / "blocked_links_report.txt"
-        write_report(blocked_links_path, self.blocked_links)
+        static_links_path = self.output_dir / "static_sage_links_report.txt"
+        write_report(static_links_path, self.blocked_links)
         
         print(f"\n{report_text}")
         print(f"\nReport saved to: {report_path}")
-        print(f"Blocked links report saved to: {blocked_links_path}")
+        print(f"Static SAGE links report saved to: {static_links_path}")
     
     def _save_intermediate_report(self, current: int, total: int):
         """Save intermediate progress report"""

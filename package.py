@@ -49,7 +49,7 @@ def archive_paths(output_dir: Path, page_files: Iterable[Path], archive_path: Pa
 
 
 def blocked_link_count(report_path: Path) -> int:
-    """Count audited target-domain links in the Phase 3 report."""
+    """Count static SAGE links in the Phase 3 report."""
     if not report_path.exists():
         return 0
     return sum(1 for line in report_path.read_text(encoding="utf-8").splitlines() if line.startswith("Link:   "))
@@ -104,9 +104,9 @@ def summary_text(
 
     lines.extend([
         "",
-        "## Blocked links",
+        "## Static SAGE links",
         "",
-        f"- Links found on {TARGET_DOMAIN}: {blocked_count}",
+        f"- Static links found on {TARGET_DOMAIN}: {blocked_count}",
         f"- Report generated: {'yes' if blocked_report_exists else 'no'}",
         "",
         "## Changes since last run",
@@ -134,7 +134,6 @@ def package_delivery(
     }
     outputs: Dict[str, Path] = {}
     change_report = output_dir / "changes_since_last_run.txt"
-    run_manifest_candidates = sorted(output_dir.glob("run_manifest_*.json"), key=lambda path: path.stat().st_mtime)
     for prefix, filename_template in PAGE_GROUPS.items():
         archive_path = output_dir / filename_template.format(month)
         page_files = matching_page_files(page_dir, prefix)
@@ -142,18 +141,16 @@ def package_delivery(
         with zipfile.ZipFile(archive_path, "a", compression=zipfile.ZIP_DEFLATED) as archive:
             if change_report.exists():
                 archive.write(change_report, change_report.name)
-            for manifest_path_candidate in run_manifest_candidates:
-                archive.write(manifest_path_candidate, manifest_path_candidate.name)
         outputs[prefix] = archive_path
 
-    blocked_report = output_dir / "blocked_links_report.txt"
+    static_links_report = output_dir / "static_sage_links_report.txt"
     summary_path = output_dir / "DELIVERY_SUMMARY.md"
     summary_path.write_text(
         summary_text(
             load_manifest(manifest_path),
             page_counts,
-            blocked_link_count(blocked_report),
-            blocked_report.exists(),
+            blocked_link_count(static_links_report),
+            static_links_report.exists(),
             month,
             change_report,
         ),

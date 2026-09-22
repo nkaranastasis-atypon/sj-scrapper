@@ -16,7 +16,7 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
     (output_dir / "assets" / "logo.png").write_bytes(b"asset")
     (output_dir / "lib" / "accordion.js").write_text("lib", encoding="utf-8")
     (output_dir / "fonts" / "font.woff").write_bytes(b"font")
-    (output_dir / "blocked_links_report.txt").write_text(
+    (output_dir / "static_sage_links_report.txt").write_text(
         "Link:   https://journals.sagepub.com/home/AJS\n", encoding="utf-8"
     )
     (output_dir / "changes_since_last_run.txt").write_text(
@@ -40,17 +40,16 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
             "lib/accordion.js",
             "fonts/font.woff",
             "changes_since_last_run.txt",
-            "run_manifest_20260922-142203.json",
         }
     with zipfile.ZipFile(outputs["author-instructions"]) as archive:
         assert "page/author-instructions_AJS.html" in archive.namelist()
         assert "page/editorial-board_AJS.html" not in archive.namelist()
         assert "changes_since_last_run.txt" in archive.namelist()
-        assert "run_manifest_20260922-142203.json" in archive.namelist()
+        assert "run_manifest_20260922-142203.json" not in archive.namelist()
 
     summary = outputs["summary"].read_text(encoding="utf-8")
     assert "ABH" in summary
-    assert "Links found on journals.sagepub.com: 1" in summary
+    assert "Static links found on journals.sagepub.com: 1" in summary
     assert "Changed journals since the last run" in summary
     assert "- AJS" in summary
     assert "- XYZ" in summary
