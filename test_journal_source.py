@@ -1,4 +1,4 @@
-from journal_source import build_manifest, load_excluded_codes, newest_mddb_filename, parse_alpha_codes
+from journal_source import build_manifest, generate_manifest_from_xml, load_excluded_codes, newest_mddb_filename, parse_alpha_codes
 
 
 def test_newest_mddb_filename_uses_timestamped_export_name():
@@ -52,3 +52,21 @@ def test_build_manifest_adds_both_page_types_and_excludes_corporate_fed_codes():
             "excluded_reason": "",
         },
     ]
+
+
+def test_generate_manifest_from_xml_reports_progress(tmp_path):
+    xml_path = tmp_path / "mddb.xml"
+    xml_path.write_text("<root><alpha_code>AJS</alpha_code></root>", encoding="utf-8")
+    exception_path = tmp_path / "known_exceptions.yaml"
+    exception_path.write_text("corporate_fed: []\n", encoding="utf-8")
+    progress = []
+
+    manifest = generate_manifest_from_xml(
+        xml_path,
+        {"exceptionsPath": str(exception_path)},
+        progress.append,
+    )
+
+    assert manifest[0]["journal_code"] == "AJS"
+    assert any("XML parsing complete" in message for message in progress)
+    assert any("Manifest built" in message for message in progress)

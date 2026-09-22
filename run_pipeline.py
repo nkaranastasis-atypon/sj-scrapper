@@ -49,7 +49,7 @@ def write_manifest(path: Path, records: List[Dict[str, Any]]) -> None:
     path.write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8")
 
 
-def validate_package(outputs: Dict[str, Path]) -> None:
+def validate_package(outputs: Dict[str, Path], allow_empty_pages: bool = False) -> None:
     """Verify package files exist, are readable ZIPs, and contain pages."""
     for name in ("editorial-board", "author-instructions"):
         archive_path = outputs.get(name)
@@ -58,7 +58,7 @@ def validate_package(outputs: Dict[str, Path]) -> None:
         with zipfile.ZipFile(archive_path) as archive:
             if archive.testzip() is not None:
                 raise click.ClickException(f"Packaging step failed: corrupt {archive_path.name}")
-            if not any(entry.startswith("page/") for entry in archive.namelist()):
+            if not allow_empty_pages and not any(entry.startswith("page/") for entry in archive.namelist()):
                 raise click.ClickException(f"Packaging step failed: {archive_path.name} has no pages")
     summary = outputs.get("summary")
     if not summary or not summary.exists() or not summary.read_text(encoding="utf-8").strip():
@@ -86,9 +86,9 @@ def run_pipeline(
     if xml_path:
         if not xml_path.exists():
             raise click.ClickException(f"Manifest step failed: XML file not found: {xml_path}")
-        records = generate_manifest_from_xml(xml_path, config)
+        records = generate_manifest_from_xml(xml_path, config, click.echo)
     else:
-        records = generate_manifest(config)
+        records = generate_manifest(config, click.echo)
     validate_manifest(records)
     manifest_path = output_dir / "journal_manifest.json"
     write_manifest(manifest_path, records)
@@ -105,7 +105,13 @@ def run_pipeline(
     click.echo(f"  Journals: {len(records)}; URLs to scrape: {len(active_urls)}")
     click.echo("[3/4] Scraping pages and validating reports")
     scraper = WebScraper(config)
-    scraper.run_urls(active_urls, sample_dir, resume=False)
+    interrupted = False
+    try:
+        scraper.run_urls(active_urls, sample_dir, resume=False)
+    except KeyboardInterrupt:
+        interrupted = True
+        click.echo("\nScraping interrupted; preserving checkpoint and packaging completed pages.")
+        scraper.write_reports()
     report_path = output_dir / "scraping_report.txt"
     blocked_path = output_dir / "blocked_links_report.txt"
     if not report_path.exists() or not blocked_path.exists():
@@ -119,8 +125,14 @@ def run_pipeline(
 
     click.echo("[4/4] Packaging and validating delivery artifacts")
     outputs = package_delivery(output_dir, manifest_path, delivery_month)
-    validate_package(outputs)
-    click.echo(f"Pipeline complete: {scraper.report.successful}/{len(active_urls)} pages generated")
+    validate_package(outputs, allow_empty_pages=interrupted)
+    if interrupted:
+        click.echo(
+            f"Pipeline completed with interruption: "
+            f"{scraper.report.successful}/{len(active_urls)} pages generated."
+        )
+    else:
+        click.echo(f"Pipeline complete: {scraper.report.successful}/{len(active_urls)} pages generated")
     return outputs
 
 

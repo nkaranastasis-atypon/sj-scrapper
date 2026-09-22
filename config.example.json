@@ -15,12 +15,16 @@
     "connectTimeout": 30,
     "bannerTimeout": 30,
     "authTimeout": 30,
-    "readTimeout": 120
+    "readTimeout": 120,
+    "transferRetries": 3,
+    "transferRetryDelay": 3,
+    "keepaliveSeconds": 30
   },
   "options": {
     "localizeImages": true,
     "deobfuscateEmails": true,
     "delayMs": 500,
+    "maxWorkers": 8,
     "retries": 3,
     "timeout": 30
   }

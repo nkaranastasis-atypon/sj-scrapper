@@ -155,6 +155,7 @@ Edit `config.json` to customize settings:
     "localizeImages": true,
     "deobfuscateEmails": true,
     "delayMs": 500,
+    "maxWorkers": 1,
     "retries": 3,
     "timeout": 30
   }
@@ -169,6 +170,7 @@ Edit `config.json` to customize settings:
 | `assetsPath` | folder name | Subfolder inside `outputDir` for downloaded images |
 | `exceptionsPath` | path | YAML file containing static journal exceptions |
 | `journalSource` | object | SFTP connection and manifest output settings |
+| `options.maxWorkers` | positive integer | Parallel page workers; defaults to `8`, while `1` keeps sequential behavior |
 
 ## Output Structure
 

@@ -2,10 +2,11 @@
 
 import json
 import re
+import time
 import xml.etree.ElementTree as ElementTree
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Sequence
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
 
 import click
 import paramiko
@@ -15,6 +16,7 @@ import yaml
 MDDB_FILENAME_PATTERN = re.compile(r"^atypon-sage-mddb_(.+)\.xml$")
 MDDB_TIMESTAMP_PATTERNS = ("%d-%m-%Y_%H-%M-%S", "%Y%m%d_%H%M%S")
 JOURNALS_BASE_URL = "https://journals.sagepub.com"
+ProgressCallback = Callable[[str], None]
 
 
 class JournalSourceError(RuntimeError):
@@ -88,8 +90,15 @@ def load_excluded_codes(exception_path: Path) -> set[str]:
     }
 
 
-def fetch_latest_mddb_xml(source_config: Dict[str, Any]) -> bytes:
+def fetch_latest_mddb_xml(
+    source_config: Dict[str, Any],
+    progress: Optional[ProgressCallback] = None,
+) -> bytes:
     """Download the newest configured MDDB XML from SFTP."""
+    def report(message: str) -> None:
+        if progress:
+            progress(message)
+
     host = source_config.get("host")
     username = source_config.get("username")
     remote_dir = source_config.get("remoteDir")
@@ -107,36 +116,99 @@ def fetch_latest_mddb_xml(source_config: Dict[str, Any]) -> bytes:
     connect_options["banner_timeout"] = source_config.get("bannerTimeout", 30)
     connect_options["auth_timeout"] = source_config.get("authTimeout", 30)
 
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-        client.connect(**connect_options)
-        transport = client.get_transport()
-        if transport:
-            transport.settimeout(source_config.get("readTimeout", 120))
-        with client.open_sftp() as sftp:
-            filename = newest_mddb_filename(sftp.listdir(remote_dir))
-            with sftp.open(f"{remote_dir.rstrip('/')}/{filename}", "rb") as remote_file:
-                return remote_file.read()
-    except (OSError, paramiko.SSHException) as error:
-        raise JournalSourceError(f"Unable to download MDDB XML: {error}") from error
-    finally:
-        client.close()
+    transfer_retries = max(1, int(source_config.get("transferRetries", 3)))
+    retry_delay = max(0, float(source_config.get("transferRetryDelay", 3)))
+
+    for attempt in range(1, transfer_retries + 1):
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            report(
+                f"Connecting to SFTP {host}:{source_config.get('port', 22)} "
+                f"as {username} (attempt {attempt}/{transfer_retries})..."
+            )
+            client.connect(**connect_options)
+            transport = client.get_transport()
+            if transport:
+                transport.set_keepalive(source_config.get("keepaliveSeconds", 30))
+            report("SFTP authentication successful.")
+            with client.open_sftp() as sftp:
+                sftp.get_channel().settimeout(source_config.get("readTimeout", 120))
+                report(f"Listing remote directory {remote_dir}...")
+                filename = newest_mddb_filename(sftp.listdir(remote_dir))
+                remote_path = f"{remote_dir.rstrip('/')}/{filename}"
+                file_size = sftp.stat(remote_path).st_size
+                report(f"Selected {filename} ({file_size / 1024 / 1024:.1f} MB).")
+                report("Downloading MDDB XML...")
+                chunks = []
+                downloaded = 0
+                last_percent = -1
+                with sftp.open(remote_path, "rb") as remote_file:
+                    if hasattr(remote_file, "prefetch"):
+                        remote_file.prefetch(file_size)
+                    while True:
+                        chunk = remote_file.read(4 * 1024 * 1024)
+                        if not chunk:
+                            break
+                        chunks.append(chunk)
+                        downloaded += len(chunk)
+                        percent = int(downloaded * 100 / file_size) if file_size else 100
+                        if percent != last_percent:
+                            report(
+                                f"  Download progress: {percent}% "
+                                f"({downloaded / 1024 / 1024:.1f} MB)"
+                            )
+                            last_percent = percent
+                report(f"Download complete ({downloaded / 1024 / 1024:.1f} MB).")
+                return b"".join(chunks)
+        except (OSError, paramiko.SSHException) as error:
+            if attempt == transfer_retries:
+                raise JournalSourceError(
+                    f"Unable to download MDDB XML after {attempt} attempts: {error}"
+                ) from error
+            report(f"SFTP transfer failed: {error}. Retrying in {retry_delay:g}s...")
+            time.sleep(retry_delay)
+        finally:
+            client.close()
+
+    raise JournalSourceError("Unable to download MDDB XML")
 
 
-def generate_manifest_from_xml(xml_path: Path, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def generate_manifest_from_xml(
+    xml_path: Path,
+    config: Dict[str, Any],
+    progress: Optional[ProgressCallback] = None,
+) -> List[Dict[str, Any]]:
     """Build a manifest from a local MDDB XML file for offline rehearsals."""
+    if progress:
+        progress(f"Reading local MDDB XML {xml_path}...")
     codes = parse_alpha_codes(xml_path.read_bytes())
+    if progress:
+        progress(f"XML parsing complete: {len(codes)} unique journal codes found.")
     exception_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
-    return build_manifest(codes, load_excluded_codes(exception_path))
+    manifest = build_manifest(codes, load_excluded_codes(exception_path))
+    if progress:
+        progress(f"Manifest built: {len(manifest)} journals, {sum(record['excluded'] for record in manifest)} excluded.")
+    return manifest
 
 
-def generate_manifest(config: Dict[str, Any]) -> List[Dict[str, Any]]:
+def generate_manifest(
+    config: Dict[str, Any],
+    progress: Optional[ProgressCallback] = None,
+) -> List[Dict[str, Any]]:
     """Download, parse, and turn the latest MDDB XML into manifest records."""
     source_config = config.get("journalSource", {})
-    codes = parse_alpha_codes(fetch_latest_mddb_xml(source_config))
+    xml_content = fetch_latest_mddb_xml(source_config, progress)
+    if progress:
+        progress("Parsing downloaded MDDB XML...")
+    codes = parse_alpha_codes(xml_content)
+    if progress:
+        progress(f"XML parsing complete: {len(codes)} unique journal codes found.")
     exception_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
-    return build_manifest(codes, load_excluded_codes(exception_path))
+    manifest = build_manifest(codes, load_excluded_codes(exception_path))
+    if progress:
+        progress(f"Manifest built: {len(manifest)} journals, {sum(record['excluded'] for record in manifest)} excluded.")
+    return manifest
 
 
 @click.command()
@@ -147,7 +219,7 @@ def main(config_path: str, output_path: str | None) -> None:
     with open(config_path, encoding="utf-8") as config_file:
         config = json.load(config_file)
 
-    manifest = generate_manifest(config)
+    manifest = generate_manifest(config, click.echo)
     destination = Path(output_path or config.get("journalSource", {}).get("manifestPath", "journal_manifest.json"))
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

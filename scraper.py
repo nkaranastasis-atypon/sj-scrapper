@@ -9,6 +9,8 @@ import time
 import re
 import os
 import shutil
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from urllib.parse import urljoin, urlparse
@@ -21,6 +23,7 @@ class ScraperReport:
     """Tracks scraping statistics and errors"""
     
     def __init__(self):
+        self._lock = threading.Lock()
         self.total = 0
         self.successful = 0
         self.failed = 0
@@ -29,24 +32,28 @@ class ScraperReport:
         self.emails_decoded = []
     
     def add_success(self, url: str, filename: str):
-        self.successful += 1
+        with self._lock:
+            self.successful += 1
         
     def add_error(self, url: str, error: str):
-        self.failed += 1
-        self.errors.append({"url": url, "error": error})
+        with self._lock:
+            self.failed += 1
+            self.errors.append({"url": url, "error": error})
     
     def add_image(self, original: str, local: str, filename: str):
-        self.images_processed.append({
-            "original": original,
-            "local": local,
-            "filename": filename
-        })
+        with self._lock:
+            self.images_processed.append({
+                "original": original,
+                "local": local,
+                "filename": filename
+            })
     
     def add_email(self, encoded: str, decoded: str):
-        self.emails_decoded.append({
-            "encoded": encoded,
-            "decoded": decoded
-        })
+        with self._lock:
+            self.emails_decoded.append({
+                "encoded": encoded,
+                "decoded": decoded
+            })
     
     def generate_report(self) -> str:
         """Generate text report"""
@@ -105,10 +112,22 @@ class WebScraper:
         self.mode = config.get("mode", "html")
         self.report = ScraperReport()
         self.blocked_links = {}
+        self._blocked_links_lock = threading.Lock()
+        self._thread_local = threading.local()
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': self.user_agent
-        })
+        self._configure_session(self.session)
+
+    def _configure_session(self, session: requests.Session) -> requests.Session:
+        session.headers.update({'User-Agent': self.user_agent})
+        return session
+
+    def _get_session(self) -> requests.Session:
+        """Return the main session or a session owned by this worker thread."""
+        if threading.current_thread() is threading.main_thread():
+            return self.session
+        if not hasattr(self._thread_local, "session"):
+            self._thread_local.session = self._configure_session(requests.Session())
+        return self._thread_local.session
     
     def fetch_url(self, url: str) -> Optional[str]:
         """Fetch URL with retry logic"""
@@ -119,7 +138,7 @@ class WebScraper:
         for attempt in range(retries):
             try:
                 time.sleep(delay)
-                response = self.session.get(url, timeout=timeout)
+                response = self._get_session().get(url, timeout=timeout)
                 response.raise_for_status()
                 return response.text
             except requests.exceptions.RequestException as e:
@@ -273,7 +292,7 @@ class WebScraper:
             filename = re.sub(r'[^\w\-.]', '_', filename)
             
             # Download image
-            response = self.session.get(full_url, timeout=10)
+            response = self._get_session().get(full_url, timeout=10)
             response.raise_for_status()
             
             # Save to assets directory
@@ -405,7 +424,7 @@ class WebScraper:
             assets_dir = self.output_dir / self.assets_path
             assets_dir.mkdir(parents=True, exist_ok=True)
 
-            response = self.session.get(full_img_url, timeout=self.options.get('timeout', 30))
+            response = self._get_session().get(full_img_url, timeout=self.options.get('timeout', 30))
             response.raise_for_status()
 
             # If the URL had no extension, derive it from Content-Type
@@ -484,10 +503,11 @@ class WebScraper:
             blocked_links = audit_html(output_html, url)
             if blocked_links:
                 journal_code = journal_code_from_url(url)
-                self.blocked_links.setdefault(journal_code, [])
-                self.blocked_links[journal_code].extend(
-                    (url, blocked_url) for blocked_url in blocked_links
-                )
+                with self._blocked_links_lock:
+                    self.blocked_links.setdefault(journal_code, [])
+                    self.blocked_links[journal_code].extend(
+                        (url, blocked_url) for blocked_url in blocked_links
+                    )
             
             self.report.add_success(url, filename)
             print(f"  ✓ Saved to: {output_path}")
@@ -555,26 +575,53 @@ class WebScraper:
         if self.mode != 'image' and sample_dir and sample_dir.exists():
             self.copy_sample_assets(sample_dir)
         
-        # Process each URL
-        for idx, url in enumerate(urls, start=1):
-            self.process_url(url)
-            
-            # Save checkpoint after processing
+        max_workers = max(1, int(self.options.get("maxWorkers", 8)))
+        if max_workers == 1:
+            results = ((url, self.process_url(url)) for url in urls)
+            self._record_results(results, checkpoint_file, len(urls))
+        else:
+            print(f"Using {max_workers} parallel workers")
+            executor = ThreadPoolExecutor(max_workers=max_workers)
+            futures = {}
+            try:
+                futures = {executor.submit(self.process_url, url): url for url in urls}
+                results = ((url, future.result()) for future, url in (
+                    (future, futures[future]) for future in as_completed(futures)
+                ))
+                self._record_results(results, checkpoint_file, len(urls))
+            except KeyboardInterrupt:
+                print("\nInterrupt received; cancelling queued scraping tasks.")
+                for future in futures:
+                    future.cancel()
+                executor.shutdown(wait=True, cancel_futures=True)
+                raise
+            else:
+                executor.shutdown(wait=True)
+        
+        self.write_reports()
+
+        # Clean up checkpoint file on successful completion
+        if checkpoint_file.exists():
+            checkpoint_file.unlink()
+            print(f"✓ Checkpoint file removed (all URLs processed)")
+
+    def _record_results(self, results, checkpoint_file: Path, total: int):
+        """Persist completed URLs and progress from sequential or parallel work."""
+        completed = 0
+        for url, _ in results:
+            completed += 1
             with open(checkpoint_file, 'a', encoding='utf-8') as f:
                 f.write(f"{url}\n")
-            
-            # Progress marker every 100 URLs
-            if idx % 100 == 0:
+            if completed % 100 == 0:
                 print(f"\n{'='*80}")
-                print(f"📊 PROGRESS CHECKPOINT: {idx}/{len(urls)} URLs processed")
+                print(f"📊 PROGRESS CHECKPOINT: {completed}/{total} URLs processed")
                 print(f"   Success: {self.report.successful} | Failed: {self.report.failed}")
                 print(f"   Images: {len(self.report.images_processed)} | Emails: {len(self.report.emails_decoded)}")
                 print(f"{'='*80}\n")
-                
-                # Save intermediate report
-                self._save_intermediate_report(idx, len(urls))
-        
-        # Generate and save report
+                self._save_intermediate_report(completed, total)
+
+    def write_reports(self):
+        """Write the current scraping and blocked-link reports."""
         report_text = self.report.generate_report()
         report_path = self.output_dir / "scraping_report.txt"
         
@@ -587,11 +634,6 @@ class WebScraper:
         print(f"\n{report_text}")
         print(f"\nReport saved to: {report_path}")
         print(f"Blocked links report saved to: {blocked_links_path}")
-        
-        # Clean up checkpoint file on successful completion
-        if checkpoint_file.exists():
-            checkpoint_file.unlink()
-            print(f"✓ Checkpoint file removed (all URLs processed)")
     
     def _save_intermediate_report(self, current: int, total: int):
         """Save intermediate progress report"""
