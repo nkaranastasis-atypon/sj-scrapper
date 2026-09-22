@@ -19,6 +19,8 @@ import click
 import yaml
 from link_audit import audit_html, journal_code_from_url, write_report
 
+TOOL_VERSION = "0.2.0"
+
 
 class ScraperReport:
     """Tracks scraping statistics and errors"""
@@ -75,6 +77,7 @@ class ScraperReport:
             "=" * 80,
             "WEB SCRAPER PROCESSING REPORT",
             "=" * 80,
+            f"Tool version: {TOOL_VERSION}",
             f"\nTotal URLs processed: {self.total}",
             f"Successful: {self.successful}",
             f"Failed: {self.failed}",
@@ -90,11 +93,21 @@ class ScraperReport:
                 lines.append(f"\nURL: {err['url']}")
                 lines.append(f"Error: {err['error']}")
 
-        if self.skipped:
+        corporate_fed_skips = [entry for entry in self.skipped if entry["reason"] == "corporate-fed journal exclusion"]
+        if corporate_fed_skips:
             lines.append("\n" + "=" * 80)
             lines.append("Excluded - corporate-fed")
             lines.append("=" * 80)
-            for entry in self.skipped:
+            for entry in corporate_fed_skips:
+                lines.append(f"\nURL: {entry['url']}")
+                lines.append(f"Reason: {entry['reason']}")
+
+        data_issues = [entry for entry in self.skipped if "obsolete journal code" in entry["reason"].lower()]
+        if data_issues:
+            lines.append("\n" + "=" * 80)
+            lines.append("Skipped - data inconsistency")
+            lines.append("=" * 80)
+            for entry in data_issues:
                 lines.append(f"\nURL: {entry['url']}")
                 lines.append(f"Reason: {entry['reason']}")
 
@@ -196,6 +209,16 @@ class WebScraper:
     def is_old_template_image_journal(self, url: str) -> bool:
         """Return True when the journal needs page-level pb-assets discovery."""
         return self._journal_code_from_url(url) in self._old_template_image_codes
+
+    def is_obsolete_journal_page(self, html: str) -> bool:
+        """Return True when the page shows the site’s 'journal not found' error."""
+        if not html:
+            return False
+        soup = BeautifulSoup(html, "lxml")
+        text = " ".join(soup.stripped_strings).lower()
+        if "journal not found" not in text:
+            return False
+        return bool(soup.find(class_="general-error-page") or soup.find("main", class_="content"))
 
     def _configure_session(self, session: requests.Session) -> requests.Session:
         session.headers.update({'User-Agent': self.user_agent})
@@ -585,6 +608,14 @@ class WebScraper:
             html = self.fetch_url(url)
             if not html:
                 raise Exception("Failed to fetch URL")
+
+            if self.is_obsolete_journal_page(html):
+                journal_code = self._journal_code_from_url(url)
+                reason = "obsolete journal code in MDDB: journal not found page"
+                self.report.add_skipped(url, reason)
+                self.report.add_success(url, f"skipped:{journal_code}")
+                print(f"  ✓ Skipped {journal_code}: {reason}")
+                return True
             
             # Extract content
             element = self.extract_content(html, url)

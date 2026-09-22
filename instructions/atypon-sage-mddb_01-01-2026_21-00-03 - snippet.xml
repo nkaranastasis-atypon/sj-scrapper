@@ -1,0 +1,597 @@
+<sage-root xsi:noNamespaceSchemaLocation="sage-mddb.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <record>
+    <metadata>
+      <publisher_id>sage-publications</publisher_id>
+      <website_id>sage</website_id>
+      <copyright_holder>European Society of Cardiology</copyright_holder>
+      <us_code>L141</us_code>
+      <alpha_code>ACC</alpha_code>
+      <journal_title>European Heart Journal: Acute Cardiovascular Care</journal_title>
+      <journal_subtitle />
+      <journal_doi>10.1177/acc.2048-8726</journal_doi>
+      <print_issn>2048-8726</print_issn>
+      <electronic_issn>2048-8734</electronic_issn>
+    </metadata>
+    <societies>
+      <logo_yn>FALSE</logo_yn>
+      <society_name>Acute Cardiovascular Care Association</society_name>
+      <society_url>https://www.escardio.org/Sub-specialty-communities/Acute-Cardiovascular-Care-Association-(ACCA)</society_url>
+      <society_logo_yn>TRUE</society_logo_yn>
+    </societies>
+    <other>
+      <top_level_subject_name>Health Sciences</top_level_subject_name>
+      <discipline>Cardiology &amp; Cardiovascular Medicine</discipline>
+      <perpetual_access_site_yn final-issue-wording="">TRUE</perpetual_access_site_yn>
+      <redirect_url_1 />
+      <redirect_url_2 />
+      <extended_footer_yn>FALSE</extended_footer_yn>
+      <video_journal_yn>FALSE</video_journal_yn>
+      <cope_member_yn>FALSE</cope_member_yn>
+      <ccc_links_in_content_yn>FALSE</ccc_links_in_content_yn>
+      <open_access_yn>FALSE</open_access_yn>
+      <continuous_publication_type />
+      <is_continuous_publication_yn>FALSE</is_continuous_publication_yn>
+      <use_altmetric>TRUE</use_altmetric>
+      <track_npi_yn>FALSE</track_npi_yn>
+      <manuscript_history_dates>FALSE</manuscript_history_dates>
+      <social_media_icons_youtube_url>www.youtube.com/user/sagepublications</social_media_icons_youtube_url>
+      <social_media_icons_facebook_url>www.facebook.com/SagePublications</social_media_icons_facebook_url>
+      <social_media_icons_linkedin_url>www.linkedin.com/company/sage-publications</social_media_icons_linkedin_url>
+      <twitter>
+        <has_twitter_widget_yn>TRUE</has_twitter_widget_yn>
+        <twitter_id>ESC_journals</twitter_id>
+        <consumer_key />
+        <consumer_secret />
+        <OAuth_Token />
+        <OAuth_Token_secret />
+      </twitter>
+      <is_sage_open>FALSE</is_sage_open>
+      <submission_site>http://www.editorialmanager.com/acc</submission_site>
+      <article_pin>3000053661</article_pin>
+      <issue_pin>3000054871</issue_pin>
+    </other>
+    <ad_service>
+      <ad_service_name>DFP</ad_service_name>
+      <ad_service_param1>health_sciences//cardiology_cardiovascular_medicine</ad_service_param1>
+      <ad_service_param2>1526760001600</ad_service_param2><ad_service_param3></ad_service_param3></ad_service>
+    <impact_factors>
+      <impact_factor heading="Impact Factor"></impact_factor>
+      <impact_factor heading="Ranking"></impact_factor>
+      <impact_factor heading="5-Year Impact Factor"></impact_factor>
+      <impact_factor heading="5-Year Ranking"></impact_factor>
+      <impact_factor heading="Source"></impact_factor>
+    </impact_factors>
+    <metrics>
+      <immediacy_index />
+      <eigenfactor />
+      <article_influence_score />
+      <full_text_downloads />
+      <cited_half_life />
+      <citing_half_life />
+      <snip />
+      <total_citations />
+      <time_to_first_decision />
+      <time_acceptance_to_online_first_pub />
+      <time_in_peer_review />
+      <time_from_submission_to_acceptance />
+      <acceptance_ratio />
+      <dora_signatory_yn>FALSE</dora_signatory_yn>
+      <scores />
+      <ranks>
+        <rank type="Google Scholar">
+          <subject />
+          <rank />
+          <h5_index>46</h5_index>
+          <h5_median>72</h5_median>
+          <google_scholar_url>https://scholar.google.com/citations?view_op=list_hcore&amp;venue=IIaqy8Dxg-IJ.2025&amp;hl=en</google_scholar_url>
+        </rank>
+      </ranks>
+      <abstracting_indexing_services>
+        <service_name>PubMed: MEDLINE</service_name>
+        <service_name>Scopus</service_name>
+        <service_name>ProQuest</service_name>
+      </abstracting_indexing_services>
+    </metrics>
+    <abstracting_index_services>
+      <abstracting_indexing_services>
+        <service_name>PubMed: MEDLINE</service_name>
+        <service_name>Scopus</service_name>
+        <service_name>ProQuest</service_name>
+      </abstracting_indexing_services>
+    </abstracting_index_services>
+    <journal_menu>
+      <menu>
+        <menu_title>Journal Homepage</menu_title>
+        <menu_url>/home/ACC</menu_url>
+      </menu>
+      <menu>
+        <menu_title>Browse journal</menu_title>
+        <menu_url />
+        <menu_item title="OnlineFirst">/toc/ACC/0/0</menu_item>
+        <menu_item title="All issues">/loi/ACC</menu_item>
+      </menu>
+      <menu>
+        <menu_title>Stay Connected</menu_title>
+        <menu_url />
+        <menu_item title="Feedback / Contact SAGE">/connected/ACC#feedback</menu_item>
+      </menu>
+    </journal_menu>
+  </record>
+  <record>
+    <metadata>
+      <publisher_id>sage-publications</publisher_id>
+      <website_id>sage</website_id>
+      <copyright_holder>SAGE Publications Ltd unless otherwise noted. Manuscript content on this site is licensed under Creative Commons Licenses</copyright_holder>
+      <us_code>L376</us_code>
+      <alpha_code>ACI</alpha_code>
+      <journal_title>Analytical Chemistry Insights</journal_title>
+      <journal_subtitle />
+      <journal_doi>10.1177/aci.1177-3901</journal_doi>
+      <print_issn>1177-3901</print_issn>
+      <electronic_issn>1177-3901</electronic_issn>
+    </metadata>
+    <societies>
+      <logo_yn>FALSE</logo_yn>
+      <society_name />
+      <society_url />
+      <society_logo_yn>FALSE</society_logo_yn>
+    </societies>
+    <other>
+      <top_level_subject_name>Life &amp; Biomedical Sciences</top_level_subject_name>
+      <discipline>Analytical Chemistry</discipline>
+      <perpetual_access_site_yn final-issue-wording="">TRUE</perpetual_access_site_yn>
+      <redirect_url_1 />
+      <redirect_url_2 />
+      <extended_footer_yn>FALSE</extended_footer_yn>
+      <video_journal_yn>FALSE</video_journal_yn>
+      <cope_member_yn>FALSE</cope_member_yn>
+      <ccc_links_in_content_yn>TRUE</ccc_links_in_content_yn>
+      <open_access_yn>TRUE</open_access_yn>
+      <continuous_publication_type>cpv</continuous_publication_type>
+      <is_continuous_publication_yn>TRUE</is_continuous_publication_yn>
+      <use_altmetric>FALSE</use_altmetric>
+      <track_npi_yn>FALSE</track_npi_yn>
+      <manuscript_history_dates>FALSE</manuscript_history_dates>
+      <social_media_icons_youtube_url>www.youtube.com/user/sagepublications</social_media_icons_youtube_url>
+      <social_media_icons_facebook_url>www.facebook.com/SagePublications</social_media_icons_facebook_url>
+      <social_media_icons_linkedin_url>www.linkedin.com/company/sage-publications</social_media_icons_linkedin_url>
+      <twitter>
+        <has_twitter_widget_yn>TRUE</has_twitter_widget_yn>
+        <twitter_id>SAGEJournals</twitter_id>
+        <consumer_key />
+        <consumer_secret />
+        <OAuth_Token />
+        <OAuth_Token_secret />
+      </twitter>
+      <is_sage_open>FALSE</is_sage_open>
+      <submission_site />
+      <article_pin>3000064537</article_pin>
+      <issue_pin>3000064653</issue_pin>
+    </other>
+    <ad_service>
+      <ad_service_name>DFP</ad_service_name>
+      <ad_service_param1>life_bio_sciences//cell_biology</ad_service_param1>
+      <ad_service_param2>1526877093289</ad_service_param2><ad_service_param3></ad_service_param3></ad_service>
+    <impact_factors>
+      <impact_factor heading="Impact Factor"></impact_factor>
+      <impact_factor heading="Ranking"></impact_factor>
+      <impact_factor heading="5-Year Impact Factor"></impact_factor>
+      <impact_factor heading="5-Year Ranking"></impact_factor>
+      <impact_factor heading="Source"></impact_factor>
+    </impact_factors>
+    <metrics>
+      <immediacy_index />
+      <eigenfactor />
+      <article_influence_score />
+      <full_text_downloads />
+      <cited_half_life />
+      <citing_half_life />
+      <snip />
+      <total_citations />
+      <time_to_first_decision />
+      <time_acceptance_to_online_first_pub />
+      <time_in_peer_review />
+      <time_from_submission_to_acceptance />
+      <acceptance_ratio />
+      <dora_signatory_yn>FALSE</dora_signatory_yn>
+      <scores />
+      <ranks />
+      <abstracting_indexing_services>
+        <service_name>Directory of Open Access Journals (DOAJ)</service_name>
+        <service_name>ProQuest</service_name>
+        <service_name>Web of Science: Emerging Sources Citation Index (ESCI)</service_name>
+        <service_name>PubMed: PubMed Central (PMC)</service_name>
+        <service_name>Scopus</service_name>
+      </abstracting_indexing_services>
+    </metrics>
+    <abstracting_index_services>
+      <abstracting_indexing_services>
+        <service_name>Directory of Open Access Journals (DOAJ)</service_name>
+        <service_name>ProQuest</service_name>
+        <service_name>Web of Science: Emerging Sources Citation Index (ESCI)</service_name>
+        <service_name>PubMed: PubMed Central (PMC)</service_name>
+        <service_name>Scopus</service_name>
+      </abstracting_indexing_services>
+    </abstracting_index_services>
+    <journal_menu>
+      <menu>
+        <menu_title>Journal Homepage</menu_title>
+        <menu_url>/home/ACI</menu_url>
+      </menu>
+      <menu>
+        <menu_title>Browse journal</menu_title>
+        <menu_url>/loi/ACI</menu_url>
+        <menu_item title="All issues">/loi/ACI</menu_item>
+      </menu>
+      <menu>
+        <menu_title>Stay Connected</menu_title>
+        <menu_url />
+        <menu_item title="Feedback / Contact SAGE">/connected/ACI#feedback</menu_item>
+      </menu>
+    </journal_menu>
+  </record>
+  <record>
+    <metadata>
+      <publisher_id>sage-publications</publisher_id>
+      <website_id>sage</website_id>
+      <copyright_holder>SAGE Publications</copyright_holder>
+      <us_code>LA85</us_code>
+      <alpha_code>AEO</alpha_code>
+      <journal_title>Journal of Aerospace Operations</journal_title>
+      <journal_subtitle />
+      <journal_doi>10.1177/aeo.2211-002X</journal_doi>
+      <print_issn>2211-002X</print_issn>
+      <electronic_issn>2211-0038</electronic_issn>
+    </metadata>
+    <societies>
+      <logo_yn>FALSE</logo_yn>
+      <society_name>IOS Press</society_name>
+      <society_url>https://journals.sagepub.com/ios-press-info</society_url>
+      <society_logo_yn>TRUE</society_logo_yn>
+    </societies>
+    <other>
+      <top_level_subject_name>Materials Science &amp; Engineering</top_level_subject_name>
+      <discipline>Materials Science &amp; Engineering</discipline>
+      <perpetual_access_site_yn final-issue-wording="">TRUE</perpetual_access_site_yn>
+      <redirect_url_1 />
+      <redirect_url_2 />
+      <extended_footer_yn>FALSE</extended_footer_yn>
+      <video_journal_yn>FALSE</video_journal_yn>
+      <cope_member_yn>FALSE</cope_member_yn>
+      <ccc_links_in_content_yn>TRUE</ccc_links_in_content_yn>
+      <open_access_yn>FALSE</open_access_yn>
+      <continuous_publication_type />
+      <is_continuous_publication_yn>FALSE</is_continuous_publication_yn>
+      <use_altmetric>FALSE</use_altmetric>
+      <track_npi_yn>FALSE</track_npi_yn>
+      <manuscript_history_dates>TRUE</manuscript_history_dates>
+      <social_media_icons_youtube_url>www.youtube.com/user/sagepublications</social_media_icons_youtube_url>
+      <social_media_icons_facebook_url>www.facebook.com/SAGEPublishing</social_media_icons_facebook_url>
+      <social_media_icons_linkedin_url>www.linkedin.com/company/sage-publications</social_media_icons_linkedin_url>
+      <twitter>
+        <has_twitter_widget_yn>TRUE</has_twitter_widget_yn>
+        <twitter_id>SAGE_News</twitter_id>
+        <consumer_key />
+        <consumer_secret />
+        <OAuth_Token />
+        <OAuth_Token_secret />
+      </twitter>
+      <is_sage_open>FALSE</is_sage_open>
+      <submission_site />
+      <article_pin />
+      <issue_pin />
+    </other>
+    <ad_service>
+      <ad_service_name />
+      <ad_service_param1 />
+      <ad_service_param2 /><ad_service_param3></ad_service_param3></ad_service>
+    <impact_factors>
+      <impact_factor heading="Impact Factor"></impact_factor>
+      <impact_factor heading="Ranking"></impact_factor>
+      <impact_factor heading="5-Year Impact Factor"></impact_factor>
+      <impact_factor heading="5-Year Ranking"></impact_factor>
+      <impact_factor heading="Source"></impact_factor>
+    </impact_factors>
+    <metrics>
+      <immediacy_index />
+      <eigenfactor />
+      <article_influence_score />
+      <full_text_downloads />
+      <cited_half_life />
+      <citing_half_life />
+      <snip />
+      <total_citations />
+      <time_to_first_decision />
+      <time_acceptance_to_online_first_pub />
+      <time_in_peer_review />
+      <time_from_submission_to_acceptance />
+      <acceptance_ratio />
+      <dora_signatory_yn>FALSE</dora_signatory_yn>
+      <scores />
+      <ranks />
+      <abstracting_indexing_services />
+    </metrics>
+    <abstracting_index_services>
+      <abstracting_indexing_services />
+    </abstracting_index_services>
+    <journal_menu>
+      <menu>
+        <menu_title>Journal Homepage</menu_title>
+        <menu_url>/home/AEO</menu_url>
+      </menu>
+      <menu>
+        <menu_title>Browse journal</menu_title>
+        <menu_url />
+        <menu_item title="All issues">/loi/AEO</menu_item>
+      </menu>
+    </journal_menu>
+  </record>
+  <record>
+    <metadata>
+      <publisher_id>sage-publications</publisher_id>
+      <website_id>sage</website_id>
+      <copyright_holder>SAGE Publications</copyright_holder>
+      <us_code>JA58</us_code>
+      <alpha_code>ZBF</alpha_code>
+      <journal_title>Zebrafish</journal_title>
+      <journal_subtitle />
+      <journal_doi>10.1177/zbf.1545-8547</journal_doi>
+      <print_issn>1545-8547</print_issn>
+      <electronic_issn>1557-8542</electronic_issn>
+    </metadata>
+    <societies>
+      <logo_yn>TRUE</logo_yn>
+      <society_name>Mary Ann Liebert</society_name>
+      <society_url />
+      <society_logo_yn>TRUE</society_logo_yn>
+    </societies>
+    <other>
+      <top_level_subject_name>Life &amp; Biomedical Sciences</top_level_subject_name>
+      <discipline>Experimental Biology  &amp; Medicine</discipline>
+      <perpetual_access_site_yn final-issue-wording="">FALSE</perpetual_access_site_yn>
+      <redirect_url_1 />
+      <redirect_url_2 />
+      <extended_footer_yn>FALSE</extended_footer_yn>
+      <video_journal_yn>FALSE</video_journal_yn>
+      <cope_member_yn>FALSE</cope_member_yn>
+      <ccc_links_in_content_yn>TRUE</ccc_links_in_content_yn>
+      <open_access_yn>FALSE</open_access_yn>
+      <continuous_publication_type />
+      <is_continuous_publication_yn>FALSE</is_continuous_publication_yn>
+      <use_altmetric>FALSE</use_altmetric>
+      <track_npi_yn>FALSE</track_npi_yn>
+      <manuscript_history_dates>FALSE</manuscript_history_dates>
+      <social_media_icons_youtube_url>www.youtube.com/user/sagepublications</social_media_icons_youtube_url>
+      <social_media_icons_facebook_url>www.facebook.com/SAGEPublishing</social_media_icons_facebook_url>
+      <social_media_icons_linkedin_url>www.linkedin.com/company/sage-publications</social_media_icons_linkedin_url>
+      <twitter>
+        <has_twitter_widget_yn>TRUE</has_twitter_widget_yn>
+        <twitter_id>SageJournals</twitter_id>
+        <consumer_key />
+        <consumer_secret />
+        <OAuth_Token />
+        <OAuth_Token_secret />
+      </twitter>
+      <is_sage_open>FALSE</is_sage_open>
+      <submission_site>https://mc.manuscriptcentral.com/zebrafish</submission_site>
+      <article_pin>3000178141</article_pin>
+      <issue_pin>3000178142</issue_pin>
+    </other>
+    <ad_service>
+      <ad_service_name />
+      <ad_service_param1 />
+      <ad_service_param2 /><ad_service_param3></ad_service_param3></ad_service>
+    <impact_factors>
+      <impact_factor heading="Impact Factor">1.2</impact_factor>
+      <impact_factor heading="Ranking">Zoology 85 out of 182</impact_factor>
+      <impact_factor heading="5-Year Impact Factor">1.8</impact_factor>
+      <impact_factor heading="5-Year Ranking">Zoology 55 out of 182</impact_factor>
+      <impact_factor heading="Source">Journal Citation Reports from Clarivate, 2024</impact_factor>
+    </impact_factors>
+    <metrics>
+      <immediacy_index />
+      <eigenfactor />
+      <article_influence_score />
+      <jcis>
+        <jci heading="Journal Citation Indicator">0.59</jci>
+        <jci heading="Ranking">Zoology 91 out of 182 | Developmental Biology 21 out of 39</jci>
+        <jci heading="Source">The Journal Citation Indicator (JCI) is a measure of citation impact that is normalized by subject category. It is calculated using citations from items published in the JCI year and prior three years, to items published in the prior three years. Because of the category normalization, a score of 1 means that articles in a journal received a number of citations equal to the average citation count in that subject category.</jci>
+      </jcis>
+      <full_text_downloads />
+      <cited_half_life />
+      <citing_half_life />
+      <snip />
+      <total_citations />
+      <time_to_first_decision />
+      <time_acceptance_to_online_first_pub />
+      <time_in_peer_review />
+      <time_from_submission_to_acceptance />
+      <acceptance_ratio />
+      <dora_signatory_yn>FALSE</dora_signatory_yn>
+      <scores>
+        <score type="CiteScore">2.500</score>
+        <score type="SCImago Journal Rank (SJR)">0.432</score>
+      </scores>
+      <ranks>
+        <rank type="CiteScore">
+          <subject>Animal Science and Zoology</subject>
+          <rank>196</rank>
+          <out_of>509</out_of>
+        </rank>
+        <rank type="CiteScore">
+          <subject>Developmental Biology</subject>
+          <rank>64</rank>
+          <out_of>78</out_of>
+        </rank>
+        <rank type="SCImago Journal Rank (SJR)">
+          <subject>Animal Science and Zoology</subject>
+          <rank>185</rank>
+          <out_of>521</out_of>
+        </rank>
+        <rank type="SCImago Journal Rank (SJR)">
+          <subject>Developmental Biology</subject>
+          <rank>65</rank>
+          <out_of>84</out_of>
+        </rank>
+      </ranks>
+      <abstracting_indexing_services />
+    </metrics>
+    <abstracting_index_services>
+      <abstracting_indexing_services />
+    </abstracting_index_services>
+    <journal_menu>
+      <menu>
+        <menu_title>Journal Homepage</menu_title>
+        <menu_url>/home/ZBF</menu_url>
+      </menu>
+      <menu>
+        <menu_title>Browse journal</menu_title>
+        <menu_url />
+        <menu_item title="Current issue">/toc/ZBF/current</menu_item>
+        <menu_item title="OnlineFirst" target="_blank">/toc/ZBF/0/0</menu_item>
+        <menu_item title="Accepted manuscripts">/toc/ZBF/0/ja</menu_item>
+        <menu_item title="All issues">/loi/ZBF</menu_item>
+        <menu_item title="Free sample">/sample/ZBF</menu_item>
+      </menu>
+      <menu>
+        <menu_title>Journal information</menu_title>
+        <menu_url />
+        <menu_item title="Journal overview and metrics">/overview-metric/ZBF</menu_item>
+        <menu_item title="Editorial board">/editorial-board/ZBF</menu_item>
+        <menu_item title="Submission guidelines">/author-instructions/ZBF</menu_item>
+        <menu_item title="Reprints">https://us.sagepub.com/en-us/nam/reprints</menu_item>
+        <menu_item title="Journal permissions">https://sagepub.com/journals-permissions</menu_item>
+        <menu_item title="Subscribe">http://www.sagepub.com/journals/Journal204158/#subscribe</menu_item>
+        <menu_item title="Recommend to library">http://sagepub.checkboxonline.com/Survey.aspx?s=bd96efb628c54feaa7f2ab060f4165cb&amp;forcenew=true&amp;link=1dcfLqr&amp;cc=sj&amp;formtype=librec&amp;from=TO&amp;contact=bit.ly/lib_us&amp;product='Zebrafish'</menu_item>
+        <menu_item title="Advertising &amp;amp; promotion">https://us.sagepub.com/en-us/nam/advertising-promotion</menu_item>
+      </menu>
+      <menu>
+        <menu_title>Submission Guidelines</menu_title>
+        <menu_url>/author-instructions/ZBF</menu_url>
+      </menu>
+    </journal_menu>
+  </record>
+  <record>
+    <metadata>
+      <publisher_id>sage-publications</publisher_id>
+      <website_id>sage</website_id>
+      <copyright_holder>Calvin College, USA</copyright_holder>
+      <us_code>L267</us_code>
+      <alpha_code>JNL</alpha_code>
+      <journal_title>Journal of Christian Education</journal_title>
+      <journal_subtitle />
+      <journal_doi>10.1177/jnl.2196-9657</journal_doi>
+      <print_issn>2196-9657</print_issn>
+      <electronic_issn />
+    </metadata>
+    <societies>
+      <logo_yn>FALSE</logo_yn>
+      <society_name>Calvin University, USA</society_name>
+      <society_url>http://www.calvin.edu/</society_url>
+      <society_logo_yn>TRUE</society_logo_yn>
+    </societies>
+    <other>
+      <top_level_subject_name>Social Sciences &amp; Humanities</top_level_subject_name>
+      <discipline />
+      <perpetual_access_site_yn final-issue-wording="">FALSE</perpetual_access_site_yn>
+      <redirect_url_1 />
+      <redirect_url_2 />
+      <extended_footer_yn>FALSE</extended_footer_yn>
+      <video_journal_yn>FALSE</video_journal_yn>
+      <cope_member_yn>FALSE</cope_member_yn>
+      <ccc_links_in_content_yn>TRUE</ccc_links_in_content_yn>
+      <open_access_yn>FALSE</open_access_yn>
+      <continuous_publication_type />
+      <is_continuous_publication_yn>FALSE</is_continuous_publication_yn>
+      <use_altmetric>FALSE</use_altmetric>
+      <track_npi_yn>FALSE</track_npi_yn>
+      <manuscript_history_dates>FALSE</manuscript_history_dates>
+      <social_media_icons_youtube_url>www.youtube.com/user/sagepublications</social_media_icons_youtube_url>
+      <social_media_icons_facebook_url>www.facebook.com/SagePublications</social_media_icons_facebook_url>
+      <social_media_icons_linkedin_url>www.linkedin.com/company/sage-publications</social_media_icons_linkedin_url>
+      <twitter>
+        <has_twitter_widget_yn>TRUE</has_twitter_widget_yn>
+        <twitter_id>SAGE_Publishing</twitter_id>
+        <consumer_key />
+        <consumer_secret />
+        <OAuth_Token />
+        <OAuth_Token_secret />
+      </twitter>
+      <is_sage_open>FALSE</is_sage_open>
+      <submission_site />
+      <article_pin>3000064558</article_pin>
+      <issue_pin>3000064674</issue_pin>
+    </other>
+    <ad_service>
+      <ad_service_name>DFP</ad_service_name>
+      <ad_service_param1 />
+      <ad_service_param2 /><ad_service_param3></ad_service_param3></ad_service>
+    <impact_factors>
+      <impact_factor heading="Impact Factor"></impact_factor>
+      <impact_factor heading="Ranking"></impact_factor>
+      <impact_factor heading="5-Year Impact Factor"></impact_factor>
+      <impact_factor heading="5-Year Ranking"></impact_factor>
+      <impact_factor heading="Source"></impact_factor>
+    </impact_factors>
+    <metrics>
+      <immediacy_index />
+      <eigenfactor />
+      <article_influence_score />
+      <full_text_downloads />
+      <cited_half_life />
+      <citing_half_life />
+      <snip />
+      <total_citations />
+      <time_to_first_decision />
+      <time_acceptance_to_online_first_pub />
+      <time_in_peer_review />
+      <time_from_submission_to_acceptance />
+      <acceptance_ratio />
+      <dora_signatory_yn>FALSE</dora_signatory_yn>
+      <scores />
+      <ranks />
+      <abstracting_indexing_services />
+    </metrics>
+    <abstracting_index_services>
+      <abstracting_indexing_services />
+    </abstracting_index_services>
+    <journal_menu>
+      <menu>
+        <menu_title>Journal Homepage</menu_title>
+        <menu_url>/home/JNL</menu_url>
+      </menu>
+      <menu>
+        <menu_title>Browse journal</menu_title>
+        <menu_url />
+        <menu_item title="Current issue">/toc/JNL/current</menu_item>
+        <menu_item title="OnlineFirst">/toc/JNL/0/0</menu_item>
+        <menu_item title="Accepted manuscripts">/toc/JNL/0/ja</menu_item>
+        <menu_item title="All issues">/loi/JNL</menu_item>
+        <menu_item title="Free sample">/sample/JNL</menu_item>
+      </menu>
+      <menu>
+        <menu_title>Journal information</menu_title>
+        <menu_url />
+        <menu_item title="Journal overview and metrics">/overview-metric/JNL</menu_item>
+        <menu_item title="Editorial board">/editorial-board/JNL</menu_item>
+        <menu_item title="Submission guidelines">/author-instructions/JNL</menu_item>
+        <menu_item title="Reprints">https://us.sagepub.com/en-us/nam/reprints</menu_item>
+        <menu_item title="Journal permissions">https://sagepub.com/journals-permissions</menu_item>
+        <menu_item title="Subscribe">http://www.sagepub.com/journals/Journal202407/#subscribe</menu_item>
+        <menu_item title="Recommend to library">http://sagepub.checkboxonline.com/Survey.aspx?s=bd96efb628c54feaa7f2ab060f4165cb&amp;forcenew=true&amp;link=1dcfLqr&amp;cc=sj&amp;formtype=librec&amp;from=TO&amp;contact=bit.ly/lib_us&amp;product='Journal%20of%20Christian%20Education'</menu_item>
+        <menu_item title="Advertising and promotion">https://journals.sagepub.com/global_master_rate_card</menu_item>
+      </menu>
+      <menu>
+        <menu_title>Stay Connected</menu_title>
+        <menu_url />
+        <menu_item title="Email Alerts">/connected/JNL#email-alert</menu_item>
+        <menu_item title="RSS Feed">/connected/JNL#rss</menu_item>
+        <menu_item title="Feedback / Contact SAGE">/connected/JNL#feedback</menu_item>
+      </menu>
+      <menu target="_blank">
+        <menu_title>Submission Guidelines</menu_title>
+        <menu_url>/author-instructions/JNL</menu_url>
+      </menu>
+    </journal_menu>
+  </record>
+</sage-root>

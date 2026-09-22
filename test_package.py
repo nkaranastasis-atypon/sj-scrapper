@@ -19,6 +19,12 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
     (output_dir / "blocked_links_report.txt").write_text(
         "Link:   https://journals.sagepub.com/home/AJS\n", encoding="utf-8"
     )
+    (output_dir / "changes_since_last_run.txt").write_text(
+        "Changed journals since the last run:\n- AJS\n- XYZ\n", encoding="utf-8"
+    )
+    (output_dir / "run_manifest_20260922-142203.json").write_text(
+        json.dumps([{"journal_code": "AJS", "html_sha256": "abc"}]), encoding="utf-8"
+    )
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps([
         {"journal_code": "ABH", "excluded": True, "excluded_reason": "corporate-fed"},
@@ -33,12 +39,19 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
             "assets/logo.png",
             "lib/accordion.js",
             "fonts/font.woff",
+            "changes_since_last_run.txt",
+            "run_manifest_20260922-142203.json",
         }
     with zipfile.ZipFile(outputs["author-instructions"]) as archive:
         assert "page/author-instructions_AJS.html" in archive.namelist()
         assert "page/editorial-board_AJS.html" not in archive.namelist()
+        assert "changes_since_last_run.txt" in archive.namelist()
+        assert "run_manifest_20260922-142203.json" in archive.namelist()
 
     summary = outputs["summary"].read_text(encoding="utf-8")
     assert "ABH" in summary
     assert "Links found on journals.sagepub.com: 1" in summary
-    assert "Phase 4 was skipped" in summary
+    assert "Changed journals since the last run" in summary
+    assert "- AJS" in summary
+    assert "- XYZ" in summary
+    assert "Tool version:" in summary

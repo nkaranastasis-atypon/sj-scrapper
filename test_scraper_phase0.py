@@ -85,6 +85,14 @@ def test_user_agent_is_loaded_from_config():
     assert scraper.session.headers["User-Agent"] == "test-agent"
 
 
+def test_scraper_report_includes_tool_version():
+    scraper = WebScraper(DEFAULT_CONFIG)
+
+    report = scraper.report.generate_report()
+
+    assert "Tool version:" in report
+
+
 def test_extract_content_tries_fallback_selectors():
     scraper = WebScraper({
         **DEFAULT_CONFIG,
@@ -137,6 +145,22 @@ def test_report_records_selector_match():
     report = scraper.report.generate_report()
     assert "Selector matches" in report
     assert "div.old-template" in report
+
+
+def test_process_url_records_obsolete_journal_code_as_skipped_data_issue():
+    scraper = WebScraper(DEFAULT_CONFIG)
+    error_page = """
+    <main class="content">
+      <div class="general-error-page">Journal not found</div>
+    </main>
+    """
+    scraper.fetch_url = Mock(return_value=error_page)
+
+    result = scraper.process_url("https://journals.example.test/author-instructions/JNL")
+
+    assert result is True
+    assert scraper.report.failed == 0
+    assert "obsolete journal code" in scraper.report.generate_report().lower()
 
 
 def test_process_images_discovers_page_level_pb_assets(tmp_path):

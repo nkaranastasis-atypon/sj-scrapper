@@ -8,6 +8,8 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from link_audit import TARGET_DOMAIN
 
+TOOL_VERSION = "0.2.0"
+
 
 PAGE_GROUPS = {
     "editorial-board": "editorial-board_{}.zip",
@@ -59,6 +61,7 @@ def summary_text(
     blocked_count: int,
     blocked_report_exists: bool,
     month: str,
+    change_report_path: Optional[Path] = None,
 ) -> str:
     """Build the delivery summary in a stable, paste-ready format."""
     excluded = [record for record in manifest if record.get("excluded")]
@@ -66,9 +69,19 @@ def summary_text(
         record for record in excluded
         if record.get("excluded_reason") == "corporate-fed"
     ]
+    change_lines = [
+        "- Phase 4 was skipped; no changes report was generated.",
+    ]
+    if change_report_path and change_report_path.exists():
+        change_lines = [
+            line.rstrip()
+            for line in change_report_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
     lines = [
         "# SAGE MSG / Editorial Board Delivery Summary",
         "",
+        f"Tool version: {TOOL_VERSION}",
         f"Delivery month: {month}",
         "",
         "## Package counts",
@@ -98,9 +111,9 @@ def summary_text(
         "",
         "## Changes since last run",
         "",
-        "- Phase 4 was skipped; no changes report was generated.",
-        "",
     ])
+    lines.extend(change_lines)
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -120,9 +133,17 @@ def package_delivery(
         for prefix in PAGE_GROUPS
     }
     outputs: Dict[str, Path] = {}
+    change_report = output_dir / "changes_since_last_run.txt"
+    run_manifest_candidates = sorted(output_dir.glob("run_manifest_*.json"), key=lambda path: path.stat().st_mtime)
     for prefix, filename_template in PAGE_GROUPS.items():
         archive_path = output_dir / filename_template.format(month)
-        archive_paths(output_dir, matching_page_files(page_dir, prefix), archive_path)
+        page_files = matching_page_files(page_dir, prefix)
+        archive_paths(output_dir, page_files, archive_path)
+        with zipfile.ZipFile(archive_path, "a", compression=zipfile.ZIP_DEFLATED) as archive:
+            if change_report.exists():
+                archive.write(change_report, change_report.name)
+            for manifest_path_candidate in run_manifest_candidates:
+                archive.write(manifest_path_candidate, manifest_path_candidate.name)
         outputs[prefix] = archive_path
 
     blocked_report = output_dir / "blocked_links_report.txt"
@@ -134,6 +155,7 @@ def package_delivery(
             blocked_link_count(blocked_report),
             blocked_report.exists(),
             month,
+            change_report,
         ),
         encoding="utf-8",
     )
