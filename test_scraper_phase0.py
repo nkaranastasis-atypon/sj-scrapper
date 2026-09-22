@@ -93,6 +93,16 @@ def test_scraper_report_includes_tool_version():
     assert "Tool version:" in report
 
 
+def test_scraper_exposes_version_and_run_log(tmp_path):
+    from scraper import __version__
+
+    scraper = WebScraper({**DEFAULT_CONFIG, "outputDir": str(tmp_path)})
+
+    assert __version__ == "0.2.0"
+    assert scraper.logger is not None
+    assert (tmp_path / "run.log").exists()
+
+
 def test_extract_content_tries_fallback_selectors():
     scraper = WebScraper({
         **DEFAULT_CONFIG,

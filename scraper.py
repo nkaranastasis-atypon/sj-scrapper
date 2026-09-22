@@ -10,6 +10,7 @@ import re
 import os
 import shutil
 import threading
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
@@ -20,6 +21,7 @@ import yaml
 from link_audit import audit_html, journal_code_from_url, write_report
 
 TOOL_VERSION = "0.2.0"
+__version__ = TOOL_VERSION
 
 
 class ScraperReport:
@@ -159,6 +161,15 @@ class WebScraper:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         )
         self.output_dir = Path(config.get("outputDir", "./output"))
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.logger = logging.getLogger(f"scraper.{id(self)}")
+        self.logger.setLevel(logging.INFO)
+        self.logger.handlers.clear()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+        file_handler = logging.FileHandler(self.output_dir / "run.log", encoding="utf-8")
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+        self.logger.propagate = False
         self.assets_path = config.get("assetsPath", "assets")
         self.options = config.get("options", {})
         self.mode = config.get("mode", "html")
@@ -595,13 +606,13 @@ class WebScraper:
         if self.mode == 'image':
             return self._process_url_image(url)
         try:
-            print(f"Processing: {url}")
+            self.logger.info("Processing: %s", url)
 
             if self.is_corporate_fed_url(url):
                 journal_code = urlparse(url).path.rstrip("/").rsplit("/", 1)[-1].upper()
                 self.report.add_skipped(url, "corporate-fed journal exclusion")
                 self.report.add_success(url, f"skipped:{journal_code}")
-                print(f"  ✓ Skipped {journal_code}: corporate-fed journal exclusion")
+                self.logger.info("Skipped %s: corporate-fed journal exclusion", journal_code)
                 return True
 
             # Fetch HTML
@@ -614,7 +625,7 @@ class WebScraper:
                 reason = "obsolete journal code in MDDB: journal not found page"
                 self.report.add_skipped(url, reason)
                 self.report.add_success(url, f"skipped:{journal_code}")
-                print(f"  ✓ Skipped {journal_code}: {reason}")
+                self.logger.warning("Skipped %s: %s", journal_code, reason)
                 return True
             
             # Extract content
