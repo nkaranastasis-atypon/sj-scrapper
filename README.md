@@ -152,6 +152,7 @@ Edit `config/config.json` to customize settings:
 ```json
 {
   "mode": "html",
+  "baseUrl": "https://journals.sagepub.com",
   "selector": "div.col-12.col-lg-8",
   "outputDir": "./output",
   "assetsPath": "assets",
@@ -178,6 +179,7 @@ Edit `config/config.json` to customize settings:
 | Field | Values | Description |
 |---|---|---|
 | `mode` | `html` / `image` | Scraping mode (default: `html`) |
+| `baseUrl` | absolute URL | Host the pipeline targets (default: `https://journals.sagepub.com`); drives manifest URLs, so the same processing logic can run against a non-prod instance of the same site (e.g. a staging host) by changing this value. The static SAGE links check always targets `journals.sagepub.com`, regardless of this setting. |
 | `selector` | any CSS selector | Element to extract; in image mode targets the `<img>` or its container |
 | `outputDir` | path | Root output folder |
 | `assetsPath` | folder name | Subfolder inside `outputDir` for downloaded images |
@@ -202,9 +204,11 @@ output/
 └── scraping_report.txt
 ```
 
-HTML runs also create `static_sage_links_report.txt`, grouped by journal code.
-After scraping, `package.py` adds the two delivery archives and
-`DELIVERY_SUMMARY.md` to the output directory.
+HTML runs also create `static_sage_links_report.txt`, grouped by journal code,
+plus `assets_report.txt` and `asset_manifest.json`, which map every downloaded
+asset back to the journal code of the page that referenced it. After scraping,
+`package.py` adds the two delivery archives and `DELIVERY_SUMMARY.md` to the
+output directory.
 
 **Image mode** (`--mode image`):
 ```
@@ -237,7 +241,13 @@ The tool generates `scraping_report.txt` with:
 - Detailed error messages for failed URLs
 
 `static_sage_links_report.txt` lists links in generated HTML that resolve to
-`journals.sagepub.com`, so they can be reviewed before delivery.
+`journals.sagepub.com` (checked regardless of the configured `baseUrl`), so
+they can be reviewed before delivery.
+
+`assets_report.txt` and `asset_manifest.json` group every downloaded asset by
+journal code, so image counts and filenames can be audited per journal.
+`DELIVERY_SUMMARY.md` includes an "Assets by journal" section summarizing the
+same data.
 
 ## Delivery packaging
 

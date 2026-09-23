@@ -292,7 +292,8 @@ def run_pipeline(
         scraper.write_reports()
     report_path = output_dir / "scraping_report.txt"
     static_links_path = output_dir / "static_sage_links_report.txt"
-    if not report_path.exists() or not static_links_path.exists():
+    assets_report_path = output_dir / "assets_report.txt"
+    if not report_path.exists() or not static_links_path.exists() or not assets_report_path.exists():
         raise click.ClickException("Reporting step failed: expected report files are missing")
     if scraper.report.failed > max_failures:
         raise click.ClickException(

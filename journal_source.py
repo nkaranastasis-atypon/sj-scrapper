@@ -15,6 +15,7 @@ import yaml
 
 MDDB_FILENAME_PATTERN = re.compile(r"^atypon-sage-mddb_(.+)\.xml$")
 MDDB_TIMESTAMP_PATTERNS = ("%d-%m-%Y_%H-%M-%S", "%Y%m%d_%H%M%S")
+# Prod default; override via config "baseUrl" to target a non-prod instance of the same site.
 JOURNALS_BASE_URL = "https://journals.sagepub.com"
 ProgressCallback = Callable[[str], None]
 
@@ -58,14 +59,19 @@ def parse_alpha_codes(xml_content: bytes) -> List[str]:
     return sorted(codes)
 
 
-def build_manifest(codes: Sequence[str], excluded_codes: Iterable[str]) -> List[Dict[str, Any]]:
+def build_manifest(
+    codes: Sequence[str],
+    excluded_codes: Iterable[str],
+    base_url: str = JOURNALS_BASE_URL,
+) -> List[Dict[str, Any]]:
     """Create scraper-ready MSG and Editorial Board URLs for MDDB codes."""
     excluded = {code.strip().upper() for code in excluded_codes}
+    base_url = base_url.rstrip("/")
     return [
         {
             "journal_code": code,
-            "msg_url": f"{JOURNALS_BASE_URL}/author-instructions/{code}",
-            "eb_url": f"{JOURNALS_BASE_URL}/editorial-board/{code}",
+            "msg_url": f"{base_url}/author-instructions/{code}",
+            "eb_url": f"{base_url}/editorial-board/{code}",
             "template_version": "unknown",
             "excluded": code in excluded,
             "excluded_reason": "corporate-fed" if code in excluded else "",
@@ -186,7 +192,8 @@ def generate_manifest_from_xml(
     if progress:
         progress(f"XML parsing complete: {len(codes)} unique journal codes found.")
     exception_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
-    manifest = build_manifest(codes, load_excluded_codes(exception_path))
+    base_url = config.get("baseUrl", JOURNALS_BASE_URL)
+    manifest = build_manifest(codes, load_excluded_codes(exception_path), base_url)
     if progress:
         progress(f"Manifest built: {len(manifest)} journals, {sum(record['excluded'] for record in manifest)} excluded.")
     return manifest
@@ -205,7 +212,8 @@ def generate_manifest(
     if progress:
         progress(f"XML parsing complete: {len(codes)} unique journal codes found.")
     exception_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
-    manifest = build_manifest(codes, load_excluded_codes(exception_path))
+    base_url = config.get("baseUrl", JOURNALS_BASE_URL)
+    manifest = build_manifest(codes, load_excluded_codes(exception_path), base_url)
     if progress:
         progress(f"Manifest built: {len(manifest)} journals, {sum(record['excluded'] for record in manifest)} excluded.")
     return manifest

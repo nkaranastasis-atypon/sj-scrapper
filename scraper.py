@@ -18,7 +18,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import click
 import yaml
-from link_audit import audit_html, journal_code_from_url, write_report
+from link_audit import audit_html, format_report, journal_code_from_url, write_report
 
 TOOL_VERSION = "0.2.0"
 __version__ = TOOL_VERSION
@@ -51,13 +51,21 @@ class ScraperReport:
             self.failed += 1
             self.errors.append({"url": url, "error": error})
     
-    def add_image(self, original: str, local: str, filename: str):
+    def add_image(self, original: str, local: str, filename: str, journal_code: str = ""):
         with self._lock:
             self.images_processed.append({
                 "original": original,
                 "local": local,
-                "filename": filename
+                "filename": filename,
+                "journal_code": journal_code or "UNKNOWN"
             })
+
+    def assets_by_journal(self) -> Dict[str, List[Dict[str, str]]]:
+        """Group downloaded assets by the journal code of the page that referenced them."""
+        grouped: Dict[str, List[Dict[str, str]]] = {}
+        for image in self.images_processed:
+            grouped.setdefault(image["journal_code"], []).append(image)
+        return grouped
 
     def add_selector_match(self, selector: str, url: str):
         with self._lock:
@@ -141,6 +149,26 @@ class ScraperReport:
         return "\n".join(lines)
 
 
+def format_assets_report(grouped: Dict[str, List[Dict[str, str]]]) -> str:
+    """Format downloaded assets grouped by the journal code that referenced them."""
+    lines = [
+        "ASSETS BY JOURNAL REPORT",
+        "=" * 80,
+    ]
+    total = sum(len(entries) for entries in grouped.values())
+    lines.append(f"Total assets downloaded: {total}")
+
+    for journal_code in sorted(grouped):
+        entries = grouped[journal_code]
+        lines.extend(["", f"Journal: {journal_code} ({len(entries)} assets)", "-" * 80])
+        for entry in entries:
+            lines.append(f"Original: {entry['original']}")
+            lines.append(f"Local:    {entry['local']}")
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 class WebScraper:
     """Main scraper class"""
     
@@ -171,6 +199,7 @@ class WebScraper:
         self.logger.addHandler(file_handler)
         self.logger.propagate = False
         self.assets_path = config.get("assetsPath", "assets")
+        self.base_url = config.get("baseUrl", "https://journals.sagepub.com")
         self.options = config.get("options", {})
         self.mode = config.get("mode", "html")
         self.exceptions_path = Path(config.get("exceptionsPath", "known_exceptions.yaml"))
@@ -445,6 +474,7 @@ class WebScraper:
         if not self.options.get("localizeImages", True):
             return
 
+        journal_code = self._journal_code_from_url(base_url)
         seen: set[str] = set()
 
         # Process <img> tags
@@ -459,7 +489,7 @@ class WebScraper:
                     local_path = f"../{self.assets_path}/{filename}"
                     img['data-original-src'] = src
                     img['src'] = local_path
-                    self.report.add_image(src, local_path, filename)
+                    self.report.add_image(src, local_path, filename, journal_code)
 
         # Process background-image in style attributes
         elements_with_style = element.find_all(style=re.compile(r'background-image'))
@@ -477,7 +507,7 @@ class WebScraper:
                         new_style = style.replace(img_url, local_path)
                         elem['style'] = new_style
                         elem['data-original-style'] = style
-                        self.report.add_image(img_url, local_path, filename)
+                        self.report.add_image(img_url, local_path, filename, journal_code)
 
         if page_html and (self.is_old_template_image_journal(base_url) or "pb-assets/cmscontent/" in page_html):
             for src in self._discover_page_level_images(base_url, assets_dir, page_html):
@@ -486,7 +516,7 @@ class WebScraper:
                 seen.add(src)
                 filename = self.download_image(src, base_url, assets_dir)
                 if filename:
-                    self.report.add_image(src, f"../{self.assets_path}/{filename}", filename)
+                    self.report.add_image(src, f"../{self.assets_path}/{filename}", filename, journal_code)
     
     def wrap_in_template(self, content: BeautifulSoup) -> str:
         """Wrap content in HTML template"""
@@ -590,7 +620,7 @@ class WebScraper:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
 
-            self.report.add_image(full_img_url, str(file_path), filename)
+            self.report.add_image(full_img_url, str(file_path), filename, self._journal_code_from_url(url))
             self.report.add_success(url, filename)
             print(f"  ✓ Saved image: {file_path}")
             return True
@@ -798,10 +828,22 @@ class WebScraper:
 
         static_links_path = self.output_dir / "static_sage_links_report.txt"
         write_report(static_links_path, self.blocked_links)
-        
+
+        assets_by_journal = self.report.assets_by_journal()
+        assets_report_path = self.output_dir / "assets_report.txt"
+        assets_report_path.write_text(format_assets_report(assets_by_journal), encoding="utf-8")
+
+        asset_manifest_path = self.output_dir / "asset_manifest.json"
+        asset_manifest = {
+            journal_code: [entry["filename"] for entry in entries]
+            for journal_code, entries in assets_by_journal.items()
+        }
+        asset_manifest_path.write_text(json.dumps(asset_manifest, indent=2) + "\n", encoding="utf-8")
+
         print(f"\n{report_text}")
         print(f"\nReport saved to: {report_path}")
         print(f"Static SAGE links report saved to: {static_links_path}")
+        print(f"Assets-by-journal report saved to: {assets_report_path}")
     
     def _save_intermediate_report(self, current: int, total: int):
         """Save intermediate progress report"""

@@ -61,6 +61,14 @@ def blocked_link_count(report_path: Path) -> int:
     return sum(1 for line in report_path.read_text(encoding="utf-8").splitlines() if line.startswith("Link:   "))
 
 
+def load_asset_manifest(asset_manifest_path: Path) -> Dict[str, List[str]]:
+    """Load the journal-code -> asset filenames mapping produced by the scraper."""
+    if not asset_manifest_path.exists():
+        return {}
+    with asset_manifest_path.open(encoding="utf-8") as manifest_file:
+        return json.load(manifest_file)
+
+
 def summary_text(
     manifest: List[Dict[str, Any]],
     page_counts: Dict[str, int],
@@ -68,6 +76,7 @@ def summary_text(
     blocked_report_exists: bool,
     month: str,
     change_report_path: Optional[Path] = None,
+    asset_manifest: Optional[Dict[str, List[str]]] = None,
 ) -> str:
     """Build the delivery summary in a stable, paste-ready format."""
     excluded = [record for record in manifest if record.get("excluded")]
@@ -115,6 +124,21 @@ def summary_text(
         f"- Static links found on {TARGET_DOMAIN}: {blocked_count}",
         f"- Report generated: {'yes' if blocked_report_exists else 'no'}",
         "",
+        "## Assets by journal",
+        "",
+    ])
+    asset_manifest = asset_manifest or {}
+    total_assets = sum(len(filenames) for filenames in asset_manifest.values())
+    lines.append(f"- Total assets downloaded: {total_assets}")
+    lines.append(f"- Journals with assets: {len(asset_manifest)}")
+    if asset_manifest:
+        lines.extend(
+            f"  - {journal_code}: {len(filenames)}"
+            for journal_code, filenames in sorted(asset_manifest.items())
+        )
+
+    lines.extend([
+        "",
         "## Changes since last run",
         "",
     ])
@@ -155,6 +179,7 @@ def package_delivery(
         outputs[prefix] = archive_path
 
     static_links_report = output_dir / "static_sage_links_report.txt"
+    asset_manifest = load_asset_manifest(output_dir / "asset_manifest.json")
     summary_path = output_dir / "DELIVERY_SUMMARY.md"
     summary_path.write_text(
         summary_text(
@@ -164,6 +189,7 @@ def package_delivery(
             static_links_report.exists(),
             month,
             change_report,
+            asset_manifest,
         ),
         encoding="utf-8",
     )
