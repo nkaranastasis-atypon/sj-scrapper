@@ -1,0 +1,1 @@
+.venv\Scripts\python.exe run_pipeline.py --config config\config.json --sample sample
