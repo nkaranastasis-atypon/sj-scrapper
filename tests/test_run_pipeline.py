@@ -7,11 +7,77 @@ from run_pipeline import (
     _combined_file_hash,
     build_run_manifest,
     changes_since_last_run,
+    upload_delivery_artifacts,
     write_changes_report,
     validate_manifest,
     validate_package,
     validate_required_section_ids,
 )
+
+
+class FakeTransport:
+    def __init__(self):
+        self.keepalive = None
+
+    def set_keepalive(self, seconds):
+        self.keepalive = seconds
+
+
+class FakeChannel:
+    def __init__(self):
+        self.timeout = None
+
+    def settimeout(self, timeout):
+        self.timeout = timeout
+
+
+class FakeSFTP:
+    def __init__(self):
+        self.channel = FakeChannel()
+        self.directories = {"/"}
+        self.uploaded = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def get_channel(self):
+        return self.channel
+
+    def stat(self, path):
+        if path not in self.directories:
+            raise OSError(path)
+
+    def mkdir(self, path):
+        self.directories.add(path)
+
+    def put(self, local_path, remote_path):
+        self.uploaded.append((local_path, remote_path))
+
+
+class FakeSSHClient:
+    def __init__(self, sftp):
+        self.sftp = sftp
+        self.transport = FakeTransport()
+        self.connect_options = None
+        self.closed = False
+
+    def set_missing_host_key_policy(self, policy):
+        self.policy = policy
+
+    def connect(self, **kwargs):
+        self.connect_options = kwargs
+
+    def get_transport(self):
+        return self.transport
+
+    def open_sftp(self):
+        return self.sftp
+
+    def close(self):
+        self.closed = True
 
 
 def test_validate_manifest_rejects_duplicate_codes():
@@ -56,6 +122,52 @@ def test_validate_package_allows_empty_archive_for_interrupted_run(tmp_path):
         },
         allow_empty_pages=True,
     )
+
+
+def test_upload_delivery_artifacts_uploads_only_archives_and_summary(tmp_path, monkeypatch):
+    outputs = {}
+    for name, filename in {
+        "editorial-board": "editorial-board_2026-09.zip",
+        "author-instructions": "submission-guidelines_2026-09.zip",
+        "summary": "DELIVERY_SUMMARY-2026-09.md",
+    }.items():
+        path = tmp_path / filename
+        path.write_text(name, encoding="utf-8")
+        outputs[name] = path
+    (tmp_path / "scraping_report.txt").write_text("not uploaded", encoding="utf-8")
+    (tmp_path / "static_sage_links_report.txt").write_text("not uploaded", encoding="utf-8")
+
+    fake_sftp = FakeSFTP()
+    fake_client = FakeSSHClient(fake_sftp)
+    monkeypatch.setattr("run_pipeline.paramiko.SSHClient", lambda: fake_client)
+
+    uploaded = upload_delivery_artifacts(
+        {
+            "journalSource": {
+                "host": "sftp.example.test",
+                "port": 22,
+                "username": "sage",
+                "keyFilename": "key.pem",
+                "deliveryRemoteDir": "/sage/delivery/2026-09",
+                "readTimeout": 60,
+                "keepaliveSeconds": 15,
+            }
+        },
+        outputs,
+        lambda message: None,
+    )
+
+    assert uploaded == [
+        "/sage/delivery/2026-09/editorial-board_2026-09.zip",
+        "/sage/delivery/2026-09/submission-guidelines_2026-09.zip",
+        "/sage/delivery/2026-09/DELIVERY_SUMMARY-2026-09.md",
+    ]
+    assert [remote_path for _, remote_path in fake_sftp.uploaded] == uploaded
+    assert fake_client.connect_options["hostname"] == "sftp.example.test"
+    assert fake_client.connect_options["key_filename"] == "key.pem"
+    assert fake_client.transport.keepalive == 15
+    assert fake_sftp.channel.timeout == 60
+    assert fake_client.closed
 
 
 def test_build_run_manifest_hashes_html_and_assets(tmp_path):

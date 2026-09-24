@@ -12,6 +12,7 @@
     "username": "",
     "keyFilename": "",
     "remoteDir": "/sage/mddb/live/received",
+    "deliveryRemoteDir": "/sage/reports/live/forCNP",
     "manifestPath": "./journal_manifest.json",
     "connectTimeout": 30,
     "bannerTimeout": 30,

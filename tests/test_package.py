@@ -33,6 +33,8 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
 
     outputs = package_delivery(output_dir, manifest_path, "2026-09")
 
+    assert outputs["summary"].name == "DELIVERY_SUMMARY-2026-09.md"
+
     with zipfile.ZipFile(outputs["editorial-board"]) as archive:
         assert set(archive.namelist()) == {
             "page/editorial-board_AJS.html",

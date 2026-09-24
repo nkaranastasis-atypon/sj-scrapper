@@ -180,7 +180,7 @@ def package_delivery(
 
     static_links_report = output_dir / "static_sage_links_report.txt"
     asset_manifest = load_asset_manifest(output_dir / "asset_manifest.json")
-    summary_path = output_dir / "DELIVERY_SUMMARY.md"
+    summary_path = output_dir / f"DELIVERY_SUMMARY-{month}.md"
     summary_path.write_text(
         summary_text(
             load_manifest(manifest_path),

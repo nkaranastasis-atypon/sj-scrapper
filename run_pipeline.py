@@ -6,9 +6,11 @@ import re
 import zipfile
 from datetime import datetime
 from pathlib import Path
+from posixpath import join as remote_path_join
 from typing import Any, Dict, List, Optional
 
 import click
+import paramiko
 from bs4 import BeautifulSoup
 
 from journal_source import generate_manifest, generate_manifest_from_xml
@@ -242,6 +244,78 @@ def validate_package(outputs: Dict[str, Path], allow_empty_pages: bool = False) 
         raise click.ClickException("Packaging step failed: delivery summary is missing or empty")
 
 
+def ensure_remote_directory(sftp: Any, remote_dir: str) -> None:
+    """Create a remote SFTP directory tree when it does not already exist."""
+    clean_dir = remote_dir.strip().rstrip("/")
+    if not clean_dir:
+        raise click.ClickException("Upload step failed: journalSource.deliveryRemoteDir is required")
+
+    current = "/" if clean_dir.startswith("/") else ""
+    for part in clean_dir.strip("/").split("/"):
+        current = remote_path_join(current, part) if current else part
+        try:
+            sftp.stat(current)
+        except OSError:
+            sftp.mkdir(current)
+
+
+def upload_delivery_artifacts(
+    config: Dict[str, Any],
+    outputs: Dict[str, Path],
+    progress: Optional[Any] = None,
+) -> List[str]:
+    """Upload only the delivery archives and timestamped summary to SFTP."""
+    source_config = config.get("journalSource", {})
+    host = source_config.get("host")
+    username = source_config.get("username")
+    remote_dir = source_config.get("deliveryRemoteDir")
+    if not all([host, username, remote_dir]):
+        raise click.ClickException(
+            "Upload step failed: journalSource requires host, username, and deliveryRemoteDir"
+        )
+
+    upload_paths = [outputs[name] for name in ("editorial-board", "author-instructions", "summary")]
+    for path in upload_paths:
+        if not path.exists():
+            raise click.ClickException(f"Upload step failed: missing delivery artifact: {path}")
+
+    connect_options: Dict[str, Any] = {"hostname": host, "username": username}
+    if source_config.get("password"):
+        connect_options["password"] = source_config["password"]
+    if source_config.get("keyFilename"):
+        connect_options["key_filename"] = source_config["keyFilename"]
+    if source_config.get("port"):
+        connect_options["port"] = source_config["port"]
+    connect_options["timeout"] = source_config.get("connectTimeout", 30)
+    connect_options["banner_timeout"] = source_config.get("bannerTimeout", 30)
+    connect_options["auth_timeout"] = source_config.get("authTimeout", 30)
+
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    uploaded = []
+    try:
+        if progress:
+            progress(f"Connecting to SFTP {host}:{source_config.get('port', 22)} as {username}...")
+        client.connect(**connect_options)
+        transport = client.get_transport()
+        if transport:
+            transport.set_keepalive(source_config.get("keepaliveSeconds", 30))
+        with client.open_sftp() as sftp:
+            sftp.get_channel().settimeout(source_config.get("readTimeout", 120))
+            ensure_remote_directory(sftp, str(remote_dir))
+            for local_path in upload_paths:
+                remote_path = remote_path_join(str(remote_dir).rstrip("/"), local_path.name)
+                if progress:
+                    progress(f"  Uploading {local_path.name} -> {remote_path}")
+                sftp.put(str(local_path), remote_path)
+                uploaded.append(remote_path)
+    except (OSError, paramiko.SSHException) as error:
+        raise click.ClickException(f"Upload step failed: {error}") from error
+    finally:
+        client.close()
+    return uploaded
+
+
 def run_pipeline(
     config_path: Path,
     output_dir: Path,
@@ -256,11 +330,11 @@ def run_pipeline(
         raise click.ClickException(f"Output step refused: directory is not empty: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    click.echo("[1/4] Loading configuration")
+    click.echo("[1/5] Loading configuration")
     config = load_config(config_path)
     config["outputDir"] = str(output_dir)
 
-    click.echo("[2/4] Building and validating journal manifest")
+    click.echo("[2/5] Building and validating journal manifest")
     if xml_path:
         if not xml_path.exists():
             raise click.ClickException(f"Manifest step failed: XML file not found: {xml_path}")
@@ -281,7 +355,7 @@ def run_pipeline(
         raise click.ClickException("Manifest step failed: all journals are excluded")
 
     click.echo(f"  Journals: {len(records)}; URLs to scrape: {len(active_urls)}")
-    click.echo("[3/4] Scraping pages and validating reports")
+    click.echo("[3/5] Scraping pages and validating reports")
     scraper = WebScraper(config)
     interrupted = False
     try:
@@ -302,12 +376,14 @@ def run_pipeline(
     if scraper.report.successful == 0:
         raise click.ClickException("Scraping step failed: no pages were generated")
 
-    click.echo("[4/4] Packaging and validating delivery artifacts")
+    click.echo("[4/5] Packaging and validating delivery artifacts")
     current_run_manifest = build_run_manifest(output_dir, records)
     validate_required_section_ids(output_dir)
     write_changes_report(output_dir, current_run_manifest, previous_run_dir)
     outputs = package_delivery(output_dir, manifest_path, delivery_month)
     validate_package(outputs, allow_empty_pages=interrupted)
+    click.echo("[5/5] Uploading delivery artifacts to SFTP")
+    upload_delivery_artifacts(config, outputs, click.echo)
     if interrupted:
         click.echo(
             f"Pipeline completed with interruption: "

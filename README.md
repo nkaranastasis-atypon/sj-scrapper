@@ -163,6 +163,7 @@ Edit `config/config.json` to customize settings:
     "username": "",
     "keyFilename": "",
     "remoteDir": "/sage/mddb/live/received",
+    "deliveryRemoteDir": "/sage/mddb/live/delivery",
     "manifestPath": "./journal_manifest.json"
   },
   "options": {
@@ -207,8 +208,9 @@ output/
 HTML runs also create `static_sage_links_report.txt`, grouped by journal code,
 plus `assets_report.txt` and `asset_manifest.json`, which map every downloaded
 asset back to the journal code of the page that referenced it. After scraping,
-`package.py` adds the two delivery archives and `DELIVERY_SUMMARY.md` to the
-output directory.
+`package.py` adds the two delivery archives and `DELIVERY_SUMMARY-YYYY-MM.md`
+to the output directory. The pipeline uploads only those three delivery files to
+`journalSource.deliveryRemoteDir` on the configured SFTP site.
 
 **Image mode** (`--mode image`):
 ```
@@ -258,7 +260,7 @@ python package.py --output output --manifest journal_manifest.json
 ```
 
 It creates `editorial-board_YYYY-MM.zip`,
-`submission-guidelines_YYYY-MM.zip`, and `DELIVERY_SUMMARY.md`. Use
+`submission-guidelines_YYYY-MM.zip`, and `DELIVERY_SUMMARY-YYYY-MM.md`. Use
 `--month YYYY-MM` when producing a delivery for a specific month.
 
 ## Testing
