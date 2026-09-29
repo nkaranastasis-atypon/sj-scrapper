@@ -30,14 +30,18 @@ def test_package_delivery_creates_split_archives_and_summary(tmp_path):
         {"journal_code": "ABH", "excluded": True, "excluded_reason": "corporate-fed"},
         {"journal_code": "AJS", "excluded": False},
     ]), encoding="utf-8")
+    sample_dir = tmp_path / "sample"
+    (sample_dir / "assets").mkdir(parents=True)
+    (sample_dir / "assets" / "sage-logo.svg").write_text("sample", encoding="utf-8")
 
-    outputs = package_delivery(output_dir, manifest_path, "2026-09")
+    outputs = package_delivery(output_dir, manifest_path, "2026-09", sample_dir)
 
     assert outputs["summary"].name == "DELIVERY_SUMMARY-2026-09.md"
 
     with zipfile.ZipFile(outputs["editorial-board"]) as archive:
         assert set(archive.namelist()) == {
             "page/editorial-board_AJS.html",
+            "assets/sage-logo.svg",
             "lib/accordion.js",
             "fonts/font.woff",
             "changes_since_last_run.txt",

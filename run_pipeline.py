@@ -380,7 +380,7 @@ def run_pipeline(
     current_run_manifest = build_run_manifest(output_dir, records)
     validate_required_section_ids(output_dir)
     write_changes_report(output_dir, current_run_manifest, previous_run_dir)
-    outputs = package_delivery(output_dir, manifest_path, delivery_month)
+    outputs = package_delivery(output_dir, manifest_path, delivery_month, sample_dir)
     validate_package(outputs, allow_empty_pages=interrupted)
     click.echo("[5/5] Uploading delivery artifacts to SFTP")
     upload_delivery_artifacts(config, outputs, click.echo)

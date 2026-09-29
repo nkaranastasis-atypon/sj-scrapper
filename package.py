@@ -15,7 +15,6 @@ PAGE_GROUPS = {
     "editorial-board": "editorial-board_{}.zip",
     "author-instructions": "submission-guidelines_{}.zip",
 }
-SHARED_DIRECTORIES = ("assets", "lib", "fonts")
 
 
 def load_manifest(manifest_path: Optional[Path]) -> List[Dict[str, Any]]:
@@ -38,15 +37,16 @@ def archive_paths(
     output_dir: Path,
     page_files: Iterable[Path],
     archive_path: Path,
-    include_assets: bool = True,
+    assets_dir: Optional[Path] = None,
 ) -> None:
-    """Create one archive with selected pages and delivery resources."""
-    directories = SHARED_DIRECTORIES if include_assets else ("lib", "fonts")
+    """Create one archive with selected pages, lib/fonts, and assets from ``assets_dir`` if given."""
+    source_dirs = {name: output_dir / name for name in ("lib", "fonts")}
+    if assets_dir is not None:
+        source_dirs["assets"] = assets_dir
     with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for page_file in page_files:
             archive.write(page_file, Path("page") / page_file.name)
-        for directory_name in directories:
-            directory = output_dir / directory_name
+        for directory_name, directory in source_dirs.items():
             if not directory.exists():
                 continue
             for path in sorted(directory.rglob("*")):
@@ -151,8 +151,13 @@ def package_delivery(
     output_dir: Path,
     manifest_path: Optional[Path] = None,
     delivery_month: Optional[str] = None,
+    sample_dir: Optional[Path] = None,
 ) -> Dict[str, Path]:
-    """Create both delivery archives and the summary file."""
+    """Create both delivery archives and the summary file.
+
+    The editorial-board archive only ships the static assets from ``sample_dir/assets``,
+    not images downloaded during the scrape.
+    """
     month = delivery_month or date.today().strftime("%Y-%m")
     if len(month) != 7 or month[4] != "-":
         raise ValueError("delivery_month must use YYYY-MM format")
@@ -164,15 +169,14 @@ def package_delivery(
     }
     outputs: Dict[str, Path] = {}
     change_report = output_dir / "changes_since_last_run.txt"
+    asset_sources = {
+        "editorial-board": sample_dir / "assets" if sample_dir else None,
+        "author-instructions": output_dir / "assets",
+    }
     for prefix, filename_template in PAGE_GROUPS.items():
         archive_path = output_dir / filename_template.format(month)
         page_files = matching_page_files(page_dir, prefix)
-        archive_paths(
-            output_dir,
-            page_files,
-            archive_path,
-            include_assets=prefix == "author-instructions",
-        )
+        archive_paths(output_dir, page_files, archive_path, asset_sources[prefix])
         with zipfile.ZipFile(archive_path, "a", compression=zipfile.ZIP_DEFLATED) as archive:
             if change_report.exists():
                 archive.write(change_report, change_report.name)
@@ -204,6 +208,8 @@ if __name__ == "__main__":
     parser.add_argument("--output", default="output", type=Path)
     parser.add_argument("--manifest", default=None, type=Path)
     parser.add_argument("--month", default=None, help="Delivery month in YYYY-MM format")
+    parser.add_argument("--sample", default=Path("sample"), type=Path,
+                        help="Sample directory whose assets/ are included in the editorial-board archive")
     args = parser.parse_args()
-    for path in package_delivery(args.output, args.manifest, args.month).values():
+    for path in package_delivery(args.output, args.manifest, args.month, args.sample).values():
         print(path)
